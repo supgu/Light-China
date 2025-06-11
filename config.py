@@ -25,7 +25,7 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
     
     # 地图API配置
-    AMAP_API_KEY = os.environ.get('AMAP_API_KEY') or 'your-amap-api-key'
+    GOOGLE_MAPS_API_KEY = os.environ.get('GOOGLE_MAPS_API_KEY') or 'your-google-maps-api-key'
     
     # 分页配置
     POSTS_PER_PAGE = 20

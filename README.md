@@ -145,7 +145,7 @@ python run.py
 - `SECRET_KEY`: 应用密钥（生产环境必须设置强密钥）
 - `JWT_SECRET_KEY`: JWT密钥（生产环境必须设置强密钥）
 - `DATABASE_URL`: 数据库连接URL
-- `AMAP_API_KEY`: 高德地图API密钥
+- `GOOGLE_MAPS_API_KEY`: Google Maps API密钥
 - `REDIS_URL`: Redis连接URL（可选）
 
 ### 配置文件

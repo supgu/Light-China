@@ -15,7 +15,7 @@
     
     <!-- Google Maps JavaScript API -->
     <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCgGw4Z-IH27FQbuuPQidt0GO_OKl6gJtA&callback=initMap&libraries=visualization">
+        src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap&libraries=visualization">
     </script>
     
     <!-- 景点工具函数 -->
@@ -54,6 +54,8 @@
                     <button class="control-btn back-btn hidden" id="backBtn">🔙 返回全国</button>
                     <button class="control-btn" id="refreshBtn">🔄 刷新</button>
                     <button class="control-btn" id="fullscreenBtn">🔍 全屏</button>
+                    <button class="control-btn" id="add-marker-btn" onclick="mapController.toggleAddMarkerMode()">📍 添加标记</button>
+                    <button class="control-btn" id="clear-markers-btn" onclick="mapController.clearAllUserMarkers()">🗑️ 清除标记</button>
                 </div>
             </div>
             

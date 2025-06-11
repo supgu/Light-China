@@ -1136,32 +1136,26 @@ class GoogleMapController {
     }
 
     addMapEventListeners() {
-        // 地图点击事件 - 点击地图添加临时标记
+        // 初始化用户标记数组
+        this.userMarkers = [];
+        this.isAddingMarker = false;
+        
+        // 地图点击事件 - 根据模式添加用户标记或显示信息
         this.map.addListener("click", (e) => {
             console.log("点击了地图，坐标：", e.latLng.lat(), e.latLng.lng());
             
-            // 创建临时标记
-            const tempMarker = new google.maps.Marker({
-                position: e.latLng,
-                map: this.map,
-                title: "临时标记",
-                icon: {
-                    path: google.maps.SymbolPath.CIRCLE,
-                    scale: 8,
-                    fillColor: '#ff6b6b',
-                    fillOpacity: 0.8,
-                    strokeColor: '#ffffff',
-                    strokeWeight: 2
-                }
-            });
-            
-            // 平移到点击位置
-            this.map.panTo(e.latLng);
-            
-            // 3秒后移除临时标记
-            setTimeout(() => {
-                tempMarker.setMap(null);
-            }, 3000);
+            if (this.isAddingMarker) {
+                // 添加用户自定义标记
+                this.addUserMarker(e.latLng);
+            } else {
+                // 创建临时标记显示坐标信息
+                this.showLocationInfo(e.latLng);
+            }
+        });
+        
+        // 右键菜单事件
+        this.map.addListener("rightclick", (e) => {
+            this.showContextMenu(e);
         });
         
         // 缩放级别变化事件
@@ -1439,6 +1433,259 @@ class GoogleMapController {
                     <button onclick="location.reload()" class="btn-primary">重新加载</button>
                 </div>
             `;
+        }
+    }
+    
+    // 添加用户自定义标记
+    addUserMarker(position, name = null, description = null) {
+        const markerName = name || prompt('请输入标记名称:', '我的标记');
+        if (!markerName) return;
+        
+        const markerDescription = description || prompt('请输入标记描述 (可选):', '');
+        
+        const userMarker = new google.maps.Marker({
+            position: position,
+            map: this.map,
+            title: markerName,
+            icon: {
+                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                scale: 6,
+                fillColor: '#4285f4',
+                fillOpacity: 0.9,
+                strokeColor: '#ffffff',
+                strokeWeight: 2,
+                rotation: 0
+            },
+            draggable: true,
+            animation: google.maps.Animation.DROP
+        });
+        
+        // 添加到用户标记数组
+        this.userMarkers.push({
+            marker: userMarker,
+            name: markerName,
+            description: markerDescription,
+            position: position
+        });
+        
+        // 添加信息窗口
+        const infoWindow = new google.maps.InfoWindow({
+            content: this.createUserMarkerInfoWindow(markerName, markerDescription, position)
+        });
+        
+        // 点击标记显示信息窗口
+        userMarker.addListener('click', () => {
+            this.closeAllInfoWindows();
+            infoWindow.open(this.map, userMarker);
+        });
+        
+        // 拖拽结束事件
+        userMarker.addListener('dragend', (e) => {
+            const userMarkerData = this.userMarkers.find(um => um.marker === userMarker);
+            if (userMarkerData) {
+                userMarkerData.position = e.latLng;
+            }
+        });
+        
+        // 右键删除标记
+        userMarker.addListener('rightclick', () => {
+            if (confirm('确定要删除这个标记吗？')) {
+                this.removeUserMarker(userMarker);
+            }
+        });
+        
+        // 退出添加模式
+        this.isAddingMarker = false;
+        this.updateAddMarkerButton();
+        
+        // 显示成功消息
+        this.showMessage('标记添加成功！', 'success');
+    }
+    
+    // 创建用户标记信息窗口内容
+    createUserMarkerInfoWindow(name, description, position) {
+        return `
+            <div class="user-marker-info">
+                <h3>${name}</h3>
+                ${description ? `<p>${description}</p>` : ''}
+                <div class="coordinates">
+                    <small>坐标: ${position.lat().toFixed(6)}, ${position.lng().toFixed(6)}</small>
+                </div>
+                <div class="marker-actions">
+                    <button onclick="mapController.shareLocation(${position.lat()}, ${position.lng()})" class="share-btn">分享</button>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 显示位置信息（临时标记）
+    showLocationInfo(position) {
+        const tempMarker = new google.maps.Marker({
+            position: position,
+            map: this.map,
+            title: "位置信息",
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: '#ff6b6b',
+                fillOpacity: 0.8,
+                strokeColor: '#ffffff',
+                strokeWeight: 2
+            }
+        });
+        
+        const infoWindow = new google.maps.InfoWindow({
+            content: `
+                <div class="location-info">
+                    <h4>位置信息</h4>
+                    <p>纬度: ${position.lat().toFixed(6)}</p>
+                    <p>经度: ${position.lng().toFixed(6)}</p>
+                    <button onclick="mapController.addMarkerAtPosition(${position.lat()}, ${position.lng()})" class="add-marker-btn">在此添加标记</button>
+                </div>
+            `
+        });
+        
+        infoWindow.open(this.map, tempMarker);
+        
+        // 3秒后移除临时标记
+        setTimeout(() => {
+            tempMarker.setMap(null);
+            infoWindow.close();
+        }, 3000);
+    }
+    
+    // 显示右键菜单
+    showContextMenu(event) {
+        const contextMenu = document.getElementById('map-context-menu') || this.createContextMenu();
+        
+        // 设置菜单位置
+        contextMenu.style.left = event.pixel.x + 'px';
+        contextMenu.style.top = event.pixel.y + 'px';
+        contextMenu.style.display = 'block';
+        
+        // 存储点击位置
+        this.contextMenuPosition = event.latLng;
+        
+        // 点击其他地方隐藏菜单
+        setTimeout(() => {
+            document.addEventListener('click', this.hideContextMenu.bind(this), { once: true });
+        }, 100);
+    }
+    
+    // 创建右键菜单
+    createContextMenu() {
+        const menu = document.createElement('div');
+        menu.id = 'map-context-menu';
+        menu.className = 'map-context-menu';
+        menu.innerHTML = `
+            <div class="context-menu-item" onclick="mapController.addMarkerHere()">
+                <span>📍</span> 在此添加标记
+            </div>
+            <div class="context-menu-item" onclick="mapController.shareLocation()">
+                <span>📤</span> 分享位置
+            </div>
+        `;
+        
+        document.body.appendChild(menu);
+        return menu;
+    }
+    
+    // 隐藏右键菜单
+    hideContextMenu() {
+        const menu = document.getElementById('map-context-menu');
+        if (menu) {
+            menu.style.display = 'none';
+        }
+    }
+    
+    // 在指定位置添加标记
+    addMarkerHere() {
+        this.hideContextMenu();
+        if (this.contextMenuPosition) {
+            this.addUserMarker(this.contextMenuPosition);
+        }
+    }
+    
+    // 在指定坐标添加标记
+    addMarkerAtPosition(lat, lng) {
+        const position = new google.maps.LatLng(lat, lng);
+        this.addUserMarker(position);
+    }
+    
+    // 移除用户标记
+    removeUserMarker(marker) {
+        const index = this.userMarkers.findIndex(um => um.marker === marker);
+        if (index > -1) {
+            marker.setMap(null);
+            this.userMarkers.splice(index, 1);
+            this.showMessage('标记已删除', 'info');
+        }
+    }
+    
+    // 切换添加标记模式
+    toggleAddMarkerMode() {
+        this.isAddingMarker = !this.isAddingMarker;
+        this.updateAddMarkerButton();
+        
+        if (this.isAddingMarker) {
+            this.showMessage('点击地图添加标记', 'info');
+        } else {
+            this.showMessage('已退出添加标记模式', 'info');
+        }
+    }
+    
+    // 更新添加标记按钮状态
+    updateAddMarkerButton() {
+        const button = document.getElementById('add-marker-btn');
+        if (button) {
+            button.textContent = this.isAddingMarker ? '退出添加模式' : '添加标记';
+            button.className = this.isAddingMarker ? 'btn btn-secondary' : 'btn btn-primary';
+        }
+    }
+    
+    // 显示消息提示
+    showMessage(message, type = 'info') {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `map-message map-message-${type}`;
+        messageDiv.textContent = message;
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            z-index: 10000;
+            background-color: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
+        `;
+        
+        document.body.appendChild(messageDiv);
+        
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 3000);
+    }
+    
+    // 分享位置
+    shareLocation(lat, lng) {
+        const position = lat && lng ? { lat, lng } : this.contextMenuPosition;
+        if (position) {
+            const url = `https://maps.google.com/?q=${position.lat || position.lat()},${position.lng || position.lng()}`;
+            navigator.clipboard.writeText(url).then(() => {
+                this.showMessage('位置链接已复制到剪贴板', 'success');
+            }).catch(() => {
+                prompt('复制此链接分享位置:', url);
+            });
+        }
+    }
+    
+    // 清除所有用户标记
+    clearAllUserMarkers() {
+        if (this.userMarkers) {
+            this.userMarkers.forEach(um => um.marker.setMap(null));
+            this.userMarkers = [];
+            this.showMessage('所有用户标记已清除', 'info');
         }
     }
 }

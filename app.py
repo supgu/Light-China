@@ -48,6 +48,13 @@ def create_app(config_name=None):
     app.register_blueprint(reviews_bp, url_prefix='/api/reviews')
     app.register_blueprint(volunteers_bp, url_prefix='/api/volunteers')
     
+    # 全局模板上下文处理器
+    @app.context_processor
+    def inject_global_vars():
+        return {
+            'google_maps_api_key': app.config['GOOGLE_MAPS_API_KEY']
+        }
+    
     # 错误处理
     @app.errorhandler(404)
     def not_found(error):
