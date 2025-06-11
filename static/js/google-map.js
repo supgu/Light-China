@@ -392,12 +392,12 @@ class GoogleMapController {
         };
         
         return `
-            <div class="custom-info-window">
+            <div class="info-window">
                 <div class="info-window-header">
-                    <div class="info-window-title">${attraction.title}</div>
-                    <div class="info-window-type">${typeNames[attraction.type] || '景点'}</div>
+                    <h3 class="info-window-title">${attraction.title}</h3>
+                    <span class="info-window-type">${typeNames[attraction.type] || '景点'}</span>
                 </div>
-                <div class="info-window-content">
+                <div class="info-window-body">
                     <div class="info-window-description">${attraction.content}</div>
                     <div class="info-window-rating">⭐ ${attraction.rating || '4.5'}</div>
                     <div class="info-window-actions">
@@ -530,14 +530,31 @@ class GoogleMapController {
     }
 
     showCityInfo(city, marker) {
+        const heatValue = city.heat || city.value || 0;
+        const attractionCount = city.attractions || Math.floor(heatValue * 0.8);
+        const description = city.description || `${city.name}，热度值${heatValue}的旅游城市`;
+        
         const content = `
-            <div class="city-info-window">
-                <h3>${city.name}</h3>
-                <p><strong>热度值:</strong> ${city.value}</p>
-                <p><strong>坐标:</strong> ${city.lat.toFixed(4)}, ${city.lng.toFixed(4)}</p>
-                <div class="info-actions">
-                    <button onclick="window.mapController.viewCityDetail('${city.code}')" class="btn-primary">查看详情</button>
-                    <button onclick="window.mapController.zoomToCity('${city.code}')" class="btn-secondary">放大查看</button>
+            <div class="info-window">
+                <div class="info-window-header">
+                    <h3 class="info-window-title">${city.name}</h3>
+                    <span class="info-window-type">旅游城市</span>
+                </div>
+                <div class="info-window-body">
+                    <div class="info-window-description">${description}</div>
+                    <div class="info-window-stats">
+                        <span class="stat-item">🔥 热度: ${heatValue}</span>
+                        <span class="stat-item">🎯 景点: ${attractionCount}个</span>
+                    </div>
+                    <div class="info-window-rating">⭐ ${(4.0 + Math.random() * 1).toFixed(1)}</div>
+                    <div class="info-window-actions">
+                        <button class="action-btn favorite" onclick="toggleFavorite('${city.name}')">❤️ 收藏</button>
+                        <button class="action-btn navigate" onclick="openNavigation(${city.lat}, ${city.lng})">🧭 导航</button>
+                    </div>
+                    <div class="info-window-extra-actions">
+                        <button onclick="window.mapController.viewCityDetail('${city.code}')" class="btn-link">查看详情</button>
+                        <button onclick="window.mapController.zoomToCity('${city.code}')" class="btn-link">放大查看</button>
+                    </div>
                 </div>
             </div>
         `;
@@ -654,12 +671,20 @@ class GoogleMapController {
 
     showAttractionInfo(attraction, marker) {
         const content = `
-            <div class="attraction-info-window">
-                <h3>${attraction.name}</h3>
-                <p><strong>评分:</strong> ⭐ ${attraction.rating || '4.5'}</p>
-                <div class="info-actions">
-                    <button onclick="window.location.href='/attraction/${attraction.id || 1}'" class="btn-primary">查看详情</button>
-                    <button onclick="window.mapController.getDirections('${attraction.name}')" class="btn-secondary">导航</button>
+            <div class="info-window">
+                <div class="info-window-header">
+                    <h3 class="info-window-title">${attraction.name}</h3>
+                    <span class="info-window-type">景点</span>
+                </div>
+                <div class="info-window-body">
+                    <div class="info-window-rating">⭐ ${attraction.rating || '4.5'}</div>
+                    <div class="info-window-actions">
+                        <button class="action-btn favorite" onclick="toggleFavorite('${attraction.name}')">❤️ 收藏</button>
+                        <button class="action-btn navigate" onclick="openNavigation(${attraction.lat || 0}, ${attraction.lng || 0})">🧭 导航</button>
+                    </div>
+                    <div class="info-window-extra-actions">
+                        <button onclick="window.location.href='/attraction/${attraction.id || 1}'" class="btn-link">📖 查看详情</button>
+                    </div>
                 </div>
             </div>
         `;
@@ -805,20 +830,25 @@ class GoogleMapController {
     // 显示景点信息窗口
     showAttractionInfo(attraction, marker) {
         const content = `
-            <div class="attraction-info-window">
-                <h3>${attraction.name}</h3>
-                <div class="attraction-type">${this.getTypeLabel(attraction.type)}</div>
-                <p class="attraction-description">${attraction.description}</p>
-                <div class="attraction-stats">
-                    <span class="rating">⭐ ${attraction.rating}</span>
-                    <span class="visitors">👥 ${attraction.visitors}人</span>
+            <div class="info-window">
+                <div class="info-window-header">
+                    <h3 class="info-window-title">${attraction.name}</h3>
+                    <span class="info-window-type">${this.getTypeLabel(attraction.type)}</span>
                 </div>
-                <div class="attraction-tags">
-                    ${attraction.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
-                </div>
-                <div class="attraction-actions">
-                    <button class="btn-favorite" onclick="window.mapController.toggleFavorite('${attraction.id}')">❤️ 收藏</button>
-                    <button class="btn-route" onclick="window.mapController.planRoute('${attraction.id}')">🗺️ 路线规划</button>
+                <div class="info-window-body">
+                    <div class="info-window-description">${attraction.description}</div>
+                    <div class="info-window-stats">
+                        <span class="stat-item">⭐ ${attraction.rating}</span>
+                        <span class="stat-item">👥 ${attraction.visitors}人</span>
+                    </div>
+                    <div class="info-window-rating">⭐ ${attraction.rating}</div>
+                    <div class="info-window-actions">
+                        <button class="action-btn favorite" onclick="window.mapController.toggleFavorite('${attraction.id}')">❤️ 收藏</button>
+                        <button class="action-btn navigate" onclick="openNavigation(${attraction.lat || 0}, ${attraction.lng || 0})">🧭 导航</button>
+                    </div>
+                    <div class="info-window-extra-actions">
+                        ${attraction.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                    </div>
                 </div>
             </div>
         `;
@@ -1504,15 +1534,28 @@ class GoogleMapController {
     
     // 创建用户标记信息窗口内容
     createUserMarkerInfoWindow(name, description, position) {
+        const lat = position.lat();
+        const lng = position.lng();
         return `
-            <div class="user-marker-info">
-                <h3>${name}</h3>
-                ${description ? `<p>${description}</p>` : ''}
-                <div class="coordinates">
-                    <small>坐标: ${position.lat().toFixed(6)}, ${position.lng().toFixed(6)}</small>
+            <div class="info-window">
+                <div class="info-window-header">
+                    <h3 class="info-window-title">${name}</h3>
+                    <span class="info-window-type">用户标记</span>
                 </div>
-                <div class="marker-actions">
-                    <button onclick="mapController.shareLocation(${position.lat()}, ${position.lng()})" class="share-btn">分享</button>
+                <div class="info-window-body">
+                    <div class="info-window-description">${description || '用户自定义标记点'}</div>
+                    <div class="info-window-stats">
+                        <span class="stat-item">📍 纬度: ${lat.toFixed(4)}</span>
+                        <span class="stat-item">📍 经度: ${lng.toFixed(4)}</span>
+                    </div>
+                    <div class="info-window-actions">
+                        <button class="action-btn favorite" onclick="toggleFavorite('${name}')">❤️ 收藏</button>
+                        <button class="action-btn navigate" onclick="openNavigation(${lat}, ${lng})">🧭 导航</button>
+                    </div>
+                    <div class="info-window-extra-actions">
+                        <button onclick="mapController.shareLocation(${lat}, ${lng})" class="btn-link">📤 分享位置</button>
+                        <button onclick="mapController.removeUserMarker(this.marker)" class="btn-link">🗑️ 删除标记</button>
+                    </div>
                 </div>
             </div>
         `;

@@ -109,8 +109,8 @@
     position: relative;
 }
 
-/* 自定义信息窗口样式 */
-.custom-info-window {
+/* 统一信息窗口样式 */
+.info-window {
     max-width: 300px;
     padding: 0;
     border-radius: 12px;
@@ -152,9 +152,33 @@
     margin-bottom: 16px;
 }
 
+.info-window-stats {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.stat-item {
+    font-size: 12px;
+    color: #6c757d;
+    background: #f8f9fa;
+    padding: 4px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+
+.info-window-rating {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffc107;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
 .info-window-actions {
     display: flex;
     gap: 8px;
+    margin-bottom: 12px;
 }
 
 .action-btn {
@@ -173,6 +197,10 @@
     color: white;
 }
 
+.action-btn.favorite.favorited {
+    background: #e74c3c;
+}
+
 .action-btn.navigate {
     background: #4ecdc4;
     color: white;
@@ -181,6 +209,31 @@
 .action-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.info-window-extra-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid #e9ecef;
+}
+
+.btn-link {
+    flex: 1;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    color: #6c757d;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-link:hover {
+    background: #f8f9fa;
+    border-color: #667eea;
+    color: #667eea;
 }
 
 /* 地图标记样式 */
@@ -533,7 +586,7 @@
         min-height: 60vh;
     }
     
-    .custom-info-window {
+    .info-window {
         max-width: 250px;
     }
     
@@ -597,7 +650,7 @@
         min-height: 50vh;
     }
     
-    .custom-info-window {
+    .info-window {
         max-width: 200px;
     }
     

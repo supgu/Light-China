@@ -960,12 +960,21 @@ function getAttractionPoints() {
 function showAttractionInfo(attraction) {
     const infoWindow = new AMap.InfoWindow({
         content: `
-            <div class="info-window-content">
-                        <h3 class="info-window-title">${attraction.name}</h3>
-                        <p class="info-window-location">${attraction.location}</p>
-                        <div class="info-window-footer">
-                            <span class="info-window-rating">⭐ ${attraction.rating}</span>
-                            <button onclick="viewAttraction('${attraction.id}')" class="info-window-btn">查看详情</button>
+            <div class="info-window">
+                <div class="info-window-header">
+                    <h3 class="info-window-title">${attraction.name}</h3>
+                    <span class="info-window-type">景点</span>
+                </div>
+                <div class="info-window-body">
+                    <div class="info-window-description">${attraction.location}</div>
+                    <div class="info-window-rating">⭐ ${attraction.rating}</div>
+                    <div class="info-window-actions">
+                        <button class="action-btn favorite" onclick="toggleFavorite('${attraction.name}')">❤️ 收藏</button>
+                        <button class="action-btn navigate" onclick="openNavigation(${attraction.coordinates[1]}, ${attraction.coordinates[0]})">🧭 导航</button>
+                    </div>
+                    <div class="info-window-extra-actions">
+                        <button onclick="viewAttraction('${attraction.id}')" class="btn-link">📖 查看详情</button>
+                    </div>
                 </div>
             </div>
         `
@@ -978,13 +987,20 @@ function showAttractionInfo(attraction) {
 function showVolunteerInfo(volunteer) {
     const infoWindow = new AMap.InfoWindow({
         content: `
-            <div class="info-window-content">
-                        <h3 class="info-window-title">${volunteer.name}</h3>
-                        <p class="info-window-location">在线志愿者：${volunteer.volunteers}人</p>
-                        <div class="volunteer-services">
-                            ${volunteer.services.map(service => `<span class="service-tag">${service}</span>`).join('')}
-                        </div>
-                        <button onclick="window.location.href='/volunteer-service'" class="info-window-btn volunteer-btn">申请服务</button>
+            <div class="info-window">
+                <div class="info-window-header">
+                    <h3 class="info-window-title">${volunteer.name}</h3>
+                    <span class="info-window-type">志愿服务</span>
+                </div>
+                <div class="info-window-body">
+                    <div class="info-window-stats">
+                        <span class="stat-item">👥 在线志愿者：${volunteer.volunteers}人</span>
+                    </div>
+                    <div class="info-window-extra-actions">
+                        ${volunteer.services.map(service => `<span class="tag">${service}</span>`).join('')}
+                        <button onclick="window.location.href='/volunteer-service'" class="btn-link">📋 申请服务</button>
+                    </div>
+                </div>
             </div>
         `
     });

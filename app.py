@@ -40,6 +40,7 @@ def create_app(config_name=None):
     from routes.routes import routes_bp
     from routes.reviews import reviews_bp
     from routes.volunteers import volunteers_bp
+    from routes.map import map_bp
     
     app.register_blueprint(main_bp)  # 主页路由，不需要前缀
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -47,6 +48,7 @@ def create_app(config_name=None):
     app.register_blueprint(routes_bp, url_prefix='/api/routes')
     app.register_blueprint(reviews_bp, url_prefix='/api/reviews')
     app.register_blueprint(volunteers_bp, url_prefix='/api/volunteers')
+    app.register_blueprint(map_bp, url_prefix='/map')
     
     # 全局模板上下文处理器
     @app.context_processor
