@@ -123,12 +123,30 @@ python run.py
 
 ## 配置说明
 
-### 环境变量
-- `FLASK_ENV`: 运行环境 (development/production)
-- `SECRET_KEY`: 应用密钥
+## 🔧 环境变量配置
+
+### 安全配置说明
+
+**重要**: 为了保护敏感信息，请使用环境变量而不是硬编码密钥。
+
+1. 复制 `.env.example` 文件为 `.env`：
+   ```bash
+   cp .env.example .env
+   ```
+
+2. 编辑 `.env` 文件，填入真实的配置值：
+   ```bash
+   # 生成强密钥的方法
+   python -c "import secrets; print(secrets.token_hex(32))"
+   ```
+
+### 必需的环境变量
+
+- `SECRET_KEY`: 应用密钥（生产环境必须设置强密钥）
+- `JWT_SECRET_KEY`: JWT密钥（生产环境必须设置强密钥）
 - `DATABASE_URL`: 数据库连接URL
-- `JWT_SECRET_KEY`: JWT密钥
-- `REDIS_URL`: Redis连接URL
+- `AMAP_API_KEY`: 高德地图API密钥
+- `REDIS_URL`: Redis连接URL（可选）
 
 ### 配置文件
 主要配置在 `config.py` 中，包括：
