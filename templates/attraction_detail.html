@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ attraction.name }} - {{ attraction.address.split()[0] if attraction.address else '未知' }} - 点亮中国</title>
+    <meta name="description" content="{{ attraction.description }}">
+    <meta name="keywords" content="{{ attraction.name }}, {{ attraction.address.split()[0] if attraction.address else '未知' }}, 旅游, 景点, 点亮中国">
+    
+    <!-- 样式文件 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/attraction.css') }}">
+    
+    <!-- 地图库 -->
+    <script src="https://webapi.amap.com/maps?v=1.4.15&key=YOUR_AMAP_KEY"></script>
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header class="header">
+        <div class="header-content">
+            <a href="{{ url_for('main.index') }}" class="logo">🌟 点亮中国</a>
+            
+            <div class="breadcrumb">
+                <a href="{{ url_for('main.index') }}">首页</a>
+                <span class="separator">></span>
+                <a href="{{ url_for('main.index') }}">{{ attraction.address.split()[0] if attraction.address else '未知' }}</a>
+                <span class="separator">></span>
+                <span class="current">{{ attraction.name }}</span>
+            </div>
+            
+            <nav class="user-menu">
+                <a href="#" id="loginBtn">登录</a>
+                <a href="#" id="shareBtn" class="share-btn">📤 分享</a>
+                <a href="#" id="favoriteBtn" class="favorite-btn">❤️ 收藏</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 景点主要信息区域 -->
+    <main class="attraction-main">
+        <!-- 左侧图片和基本信息 -->
+        <div class="attraction-left">
+            <!-- 图片轮播 -->
+            <div class="image-gallery">
+                <div class="main-image">
+                    <img id="mainImage" src="{{ attraction.images[0] if attraction.images else '/static/images/default-attraction.jpg' }}" alt="{{ attraction.name }}" width="800" height="600">
+                    <div class="image-overlay">
+                        <div class="image-counter">
+                            <span id="currentImageIndex">1</span> / <span id="totalImages">{{ attraction.images|length or 1 }}</span>
+                        </div>
+                        <div class="image-controls">
+                            <button class="img-btn prev-btn" id="prevImage">‹</button>
+                            <button class="img-btn next-btn" id="nextImage">›</button>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if attraction.images and attraction.images|length > 1 %}
+                <div class="thumbnail-list">
+                    {% for image in attraction.images %}
+                    <img class="thumbnail {{ 'active' if loop.first else '' }}" 
+                         src="{{ image }}" 
+                         alt="{{ attraction.name }}图片{{ loop.index }}"
+                         width="120" height="90"
+                         onclick="changeMainImage({{ loop.index0 }})">
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- 基本信息卡片 -->
+            <div class="info-card">
+                <div class="attraction-header">
+                    <h1 class="attraction-title">{{ attraction.name }}</h1>
+                    <div class="attraction-badges">
+                        <span class="category-badge">{{ attraction.category_name }}</span>
+                        {% if attraction.accessibility %}
+                        <span class="accessibility-badge">♿ 无障碍友好</span>
+                        {% endif %}
+                        {% if attraction.is_free %}
+                        <span class="free-badge">🆓 免费</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="rating-section">
+                    <div class="rating-display">
+                        <span class="rating-score">{{ attraction.rating }}</span>
+                        <div class="stars">
+                            {% for i in range(5) %}
+                            <span class="star {{ 'filled' if i < (attraction.rating|round) else '' }}">⭐</span>
+                            {% endfor %}
+                        </div>
+                        <span class="rating-count">({{ attraction.reviews_count }}条评价)</span>
+                    </div>
+                    <div class="rating-actions">
+                        <button class="btn btn-primary btn-sm" id="writeReviewBtn">💬 写评论</button>
+                        <button class="btn btn-outline btn-sm" id="viewReviewsBtn" onclick="document.querySelector('.reviews-section').scrollIntoView({behavior: 'smooth'})">📖 查看评论</button>
+                    </div>
+                </div>
+
+                <div class="quick-info">
+                    <div class="info-item">
+                        <span class="info-icon">📍</span>
+                        <div class="info-content">
+                            <div class="info-label">地址</div>
+                            <div class="info-value">{{ attraction.address }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <span class="info-icon">🕒</span>
+                        <div class="info-content">
+                            <div class="info-label">开放时间</div>
+                            <div class="info-value">{{ attraction.opening_hours or '请咨询景点' }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-item">
+                        <span class="info-icon">💰</span>
+                        <div class="info-content">
+                            <div class="info-label">门票价格</div>
+                            <div class="info-value">{{ attraction.ticket_price or '免费' }}</div>
+                        </div>
+                    </div>
+                    
+                    {% if attraction.phone %}
+                    <div class="info-item">
+                        <span class="info-icon">📞</span>
+                        <div class="info-content">
+                            <div class="info-label">联系电话</div>
+                            <div class="info-value">{{ attraction.phone }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="getDirectionsBtn">
+                        🧭 获取路线
+                    </button>
+                    <button class="btn btn-secondary" id="addToRouteBtn">
+                        ➕ 加入行程
+                    </button>
+                    <button class="btn btn-accent" id="writeReviewBtn2">
+                        💬 写评论
+                    </button>
+                    <button class="btn btn-outline" id="checkinBtn">
+                        📸 打卡签到
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧详细信息 -->
+        <div class="attraction-right">
+            <!-- 详细描述 -->
+            <div class="detail-card">
+                <h2 class="section-title">📖 景点介绍</h2>
+                <div class="description-content">
+                    <p>{{ attraction.description }}</p>
+                    {% if attraction.history %}
+                    <h3>历史背景</h3>
+                    <p>{{ attraction.history }}</p>
+                    {% endif %}
+                    {% if attraction.highlights %}
+                    <h3>游览亮点</h3>
+                    <ul>
+                        {% for highlight in attraction.highlights %}
+                        <li>{{ highlight }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 无障碍设施信息 -->
+            {% if attraction.accessibility_info %}
+            <div class="detail-card accessibility-card">
+                <h2 class="section-title">♿ 无障碍设施</h2>
+                <div class="accessibility-info">
+                    {% for facility in attraction.accessibility_info %}
+                    <div class="facility-item">
+                        <span class="facility-icon">{{ facility.icon }}</span>
+                        <span class="facility-name">{{ facility.name }}</span>
+                        <span class="facility-status {{ 'available' if facility.available else 'unavailable' }}">
+                            {{ '✅ 可用' if facility.available else '❌ 不可用' }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 位置地图 -->
+            <div class="detail-card">
+                <h2 class="section-title">📍 位置信息</h2>
+                <div id="attractionMap" class="attraction-map"></div>
+                <div class="map-info">
+                    <p><strong>详细地址：</strong>{{ attraction.address }}</p>
+                    {% if attraction.transportation %}
+                    <p><strong>交通指南：</strong>{{ attraction.transportation }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 附近推荐 -->
+            <div class="detail-card">
+                <h2 class="section-title">🎯 附近推荐</h2>
+                <div class="nearby-attractions">
+                    {% for nearby in nearby_attractions %}
+                    <div class="nearby-item" onclick="window.location.href='{{ url_for('attractions.get_attraction_detail', attraction_id=nearby.id) }}'">'
+                        <img src="{{ nearby.image or '/static/images/default-attraction.jpg' }}" alt="{{ nearby.name }}" width="200" height="150">
+                        <div class="nearby-info">
+                            <h4>{{ nearby.name }}</h4>
+                            <p>{{ nearby.description[:50] }}...</p>
+                            <div class="nearby-meta">
+                                <span class="distance">{{ nearby.distance }}km</span>
+                                <span class="rating">⭐ {{ nearby.rating }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 用户评论区域 -->
+    <section class="reviews-section">
+        <div class="reviews-container">
+            <div class="reviews-header">
+                <h2>💬 用户评价 ({{ attraction.reviews_count }})</h2>
+                <div class="reviews-stats">
+                    <div class="rating-breakdown">
+                        {% for i in range(5, 0, -1) %}
+                        <div class="rating-bar">
+                            <span class="rating-label">{{ i }}星</span>
+                            <div class="bar-container">
+                                <div class="bar-fill" style="width: {{ (rating_distribution[i] or 0) }}%"></div>
+                            </div>
+                            <span class="rating-percent">{{ (rating_distribution[i] or 0) }}%</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 评论筛选 -->
+            <div class="reviews-filter">
+                <button class="filter-btn active" data-filter="all">全部</button>
+                <button class="filter-btn" data-filter="5">5星</button>
+                <button class="filter-btn" data-filter="4">4星</button>
+                <button class="filter-btn" data-filter="3">3星</button>
+                <button class="filter-btn" data-filter="with-images">有图</button>
+                <button class="filter-btn" data-filter="accessibility">无障碍</button>
+            </div>
+
+            <!-- 评论列表 -->
+            <div class="reviews-list">
+                {% for review in reviews %}
+                <div class="review-item" data-rating="{{ review.rating }}">
+                    <div class="review-header">
+                        <div class="reviewer-info">
+                            <img src="{{ review.user.avatar or '/static/images/default-avatar.jpg' }}" alt="{{ review.user.username }}" class="reviewer-avatar" width="50" height="50">
+                            <div class="reviewer-details">
+                                <div class="reviewer-name">{{ review.user.username }}</div>
+                                <div class="review-date">{{ review.created_at.strftime('%Y-%m-%d') }}</div>
+                            </div>
+                        </div>
+                        <div class="review-rating">
+                            {% for i in range(5) %}
+                            <span class="star {{ 'filled' if i < review.rating else '' }}">⭐</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="review-content">
+                        <p>{{ review.content }}</p>
+                        {% if review.images %}
+                        <div class="review-images">
+                            {% for image in review.images %}
+                            <img src="{{ image }}" alt="用户图片" class="review-image" onclick="showImageModal('{{ image }}')" width="100" height="100">
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="review-actions">
+                        <button class="action-btn" onclick="likeReview({{ review.id }})">
+                            👍 <span class="like-count">{{ review.likes_count }}</span>
+                        </button>
+                        <button class="action-btn" onclick="replyReview({{ review.id }})">
+                            💬 回复
+                        </button>
+                        <button class="action-btn" onclick="reportReview({{ review.id }})">
+                            🚨 举报
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- 加载更多 -->
+            <div class="load-more">
+                <button class="btn btn-outline" id="loadMoreReviews">加载更多评论</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 写评价模态框 -->
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✍️ 写评价</h3>
+                <button class="close-btn" id="closeReviewModal">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="reviewForm">
+                    <div class="form-group">
+                        <label>评分：</label>
+                        <div class="rating-input">
+                            {% for i in range(1, 6) %}
+                            <span class="rating-star" data-rating="{{ i }}">⭐</span>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" id="reviewRating" name="rating" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>评价内容：</label>
+                        <textarea id="reviewContent" name="content" rows="5" placeholder="分享您的游览体验..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>上传图片：</label>
+                        <div class="image-upload">
+                            <input type="file" id="reviewImages" name="images" multiple accept="image/*">
+                            <div class="upload-preview" id="uploadPreview"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="accessibilityReview" name="accessibility">
+                            这是一条关于无障碍设施的评价
+                        </label>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">发布评价</button>
+                        <button type="button" class="btn btn-secondary" id="cancelReview">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 打卡模态框 -->
+    <div id="checkinModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📸 景点打卡</h3>
+                <button class="close-btn" id="closeCheckinModal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="checkin-form">
+                    <div class="camera-section">
+                        <video id="cameraPreview" autoplay></video>
+                        <canvas id="photoCanvas" class="hidden"></canvas>
+                        <div class="camera-controls">
+                            <button class="btn btn-primary" id="takePhotoBtn">📷 拍照</button>
+                            <button class="btn btn-secondary" id="uploadPhotoBtn">📁 选择图片</button>
+                            <input type="file" id="photoUpload" accept="image/*" class="hidden">
+                        </div>
+                    </div>
+                    
+                    <div class="checkin-info">
+                        <h4>{{ attraction.name }}</h4>
+                        <p>📍 {{ attraction.address }}</p>
+                        <p>🕒 {{ current_time.strftime('%Y-%m-%d %H:%M') if current_time else '' }}</p>
+                        
+                        <div class="checkin-message">
+                            <textarea placeholder="分享此刻的心情..." id="checkinMessage"></textarea>
+                        </div>
+                        
+                        <div class="checkin-actions">
+                            <button class="btn btn-primary" id="submitCheckinBtn">✅ 完成打卡</button>
+                            <button class="btn btn-secondary" id="cancelCheckinBtn">取消</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/attraction.js') }}"></script>
+    <script>
+        // 景点数据
+        const attractionData = {
+            id: {{ attraction.id }},
+            name: "{{ attraction.name }}",
+            address: "{{ attraction.address or '' }}",
+            latitude: {{ attraction.latitude or 0 }},
+            longitude: {{ attraction.longitude or 0 }}
+        };
+        const nearbyAttractions = [
+            {% for nearby in nearby_attractions %}
+            {
+                id: {{ nearby.id }},
+                name: "{{ nearby.name }}",
+                latitude: {{ nearby.latitude or 0 }},
+                longitude: {{ nearby.longitude or 0 }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化图片轮播
+            initImageGallery();
+            
+            // 初始化地图
+            initAttractionMap();
+            
+            // 初始化评论功能
+            initReviewSystem();
+            
+            // 初始化打卡功能
+            initCheckinSystem();
+            
+            // 加载用户状态
+            loadUserStatus();
+        });
+    </script>
+</body>
+</html>

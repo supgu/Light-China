@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<meta name="keywords" content="{{ city_name }}, {{ city_name }}旅游, {{ city_name }}美食, 红色旅游, 志愿服务, 点亮中国">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ city_name }} - 点亮中国旅游平台</title>
+    <meta name="description" content="{{ city_name }}旅游攻略，红色历史路线，网红美食打卡，志愿服务信息">
+    
+    <!-- 样式文件 -->    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/city.css') }}">
+    
+    <!-- 地图库将在页面底部加载 -->
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header class="header">
+        <div class="header-content">
+            <a href="{{ url_for('main.index') }}" class="logo">🌟 点亮中国</a>
+            
+            <div class="breadcrumb">
+                <a href="{{ url_for('main.index') }}">首页</a>
+                <span class="separator">></span>
+                <span class="current">{{ city_name }}</span>
+            </div>
+            
+            <div class="search-bar">
+                <input type="text" class="search-input" placeholder="搜索{{ city_name }}景点..." id="searchInput">
+                <button class="search-btn" id="searchBtn">🔍</button>
+            </div>
+            
+            <nav class="user-menu">
+                <a href="#" id="loginBtn">登录</a>
+                <a href="#" id="registerBtn">注册</a>
+                <a href="#" id="favoriteBtn" class="favorite-btn">❤️ 收藏城市</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 城市概览区域 -->
+    <section class="city-hero">
+        <div class="city-hero-bg" data-bg-image="{{ city_data.hero_image or '/static/images/default-city.jpg' }}"></div>
+        <div class="city-hero-overlay">
+            <div class="city-hero-content">
+                <h1 class="city-title">{{ city_name }}</h1>
+                <p class="city-subtitle">{{ city_data.description or '探索这座城市的独特魅力' }}</p>
+                <div class="city-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ city_data.attractions_count or 0 }}</div>
+                        <div class="stat-label">景点</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">{{ city_data.routes_count or 0 }}</div>
+                        <div class="stat-label">路线</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">{{ city_data.volunteers_count or 0 }}</div>
+                        <div class="stat-label">志愿者</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">{{ city_data.checkins_count or 0 }}</div>
+                        <div class="stat-label">打卡</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 主要内容区域 -->
+    <main class="city-main">
+        <!-- 左侧地图区域 -->
+        <div class="city-map-section">
+            <div class="map-header">
+                <h2>🗺️ {{ city_name }}景点分布</h2>
+                <div class="map-controls">
+                    <button class="control-btn" id="mapTypeBtn">🔄 切换视图</button>
+                    <button class="control-btn" id="locateBtn">📍 定位</button>
+                    <button class="control-btn" id="routeBtn">🚗 规划路线</button>
+                </div>
+            </div>
+            <div id="cityMap" class="city-map"></div>
+            
+            <!-- 地图图例 -->
+            <div class="map-legend">
+                <div class="legend-item">
+                    <span class="legend-icon red">🏛️</span>
+                    <span class="legend-text">红色历史</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-icon orange">🍜</span>
+                    <span class="legend-text">网红美食</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-icon blue">🤝</span>
+                    <span class="legend-text">志愿服务</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-icon green">🏞️</span>
+                    <span class="legend-text">自然景观</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧内容区域 -->
+        <div class="city-content-section">
+            <!-- 分类导航 -->
+            <div class="category-tabs">
+                <button class="tab-btn active" data-category="all">🌟 全部</button>
+                <button class="tab-btn" data-category="history">🏛️ 红色历史</button>
+                <button class="tab-btn" data-category="food">🍜 网红美食</button>
+                <button class="tab-btn" data-category="volunteer">🤝 志愿服务</button>
+                <button class="tab-btn" data-category="nature">🏞️ 自然景观</button>
+            </div>
+
+            <!-- 内容区域 -->
+            <div class="content-area">
+                <!-- 推荐路线卡片 -->
+                <div class="section-card routes-section">
+                    <div class="section-header">
+                        <h3>🗺️ 推荐路线</h3>
+                        <a href="#" class="more-link">查看全部 ></a>
+                    </div>
+                    <div class="routes-grid">
+                        {% for route in recommended_routes %}
+                        <div class="route-card" data-route-id="{{ route.id }}">
+                            <div class="route-image">
+                                <img src="{{ route.image or '/static/images/default-route.jpg' }}" alt="{{ route.name }}" width="300" height="200">
+                                <div class="route-duration">{{ route.duration }}小时</div>
+                            </div>
+                            <div class="route-content">
+                                <h4 class="route-title">{{ route.name }}</h4>
+                                <p class="route-description">{{ route.description[:50] }}...</p>
+                                <div class="route-meta">
+                                    <span class="route-difficulty">{{ route.difficulty }}</span>
+                                    <span class="route-rating">⭐ {{ route.rating }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 景点列表 -->
+                <div class="section-card attractions-section">
+                    <div class="section-header">
+                        <h3>🎯 热门景点</h3>
+                        <div class="filter-controls">
+                            <select id="sortSelect">
+                                <option value="popularity">按热度排序</option>
+                                <option value="rating">按评分排序</option>
+                                <option value="distance">按距离排序</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="attractions-list" id="attractionsList">
+                        {% for attraction in attractions %}
+                        <div class="attraction-card" data-category="{{ attraction.category }}" data-attraction-id="{{ attraction.id }}">
+                            <div class="attraction-image">
+                                <img src="{{ attraction.image or '/static/images/default-attraction.jpg' }}" alt="{{ attraction.name }}" width="300" height="200">
+                                <div class="attraction-category">{{ attraction.category_name }}</div>
+                                {% if attraction.accessibility %}
+                                <div class="accessibility-badge">♿ 无障碍</div>
+                                {% endif %}
+                            </div>
+                            <div class="attraction-content">
+                                <h4 class="attraction-title">{{ attraction.name }}</h4>
+                                <p class="attraction-description">{{ attraction.description[:80] }}...</p>
+                                <div class="attraction-meta">
+                                    <div class="rating">
+                                        <span class="stars">⭐ {{ attraction.rating }}</span>
+                                        <span class="reviews">({{ attraction.reviews_count }}条评价)</span>
+                                    </div>
+                                    <div class="location">📍 {{ attraction.district }}</div>
+                                </div>
+                                <div class="attraction-actions">
+                                    <button class="btn btn-primary btn-sm" onclick="viewAttraction({{ attraction.id }})">查看详情</button>
+                                    <button class="btn btn-outline btn-sm" onclick="addToRoute({{ attraction.id }})">加入路线</button>
+                                    <button class="btn btn-icon" onclick="toggleFavorite({{ attraction.id }})">❤️</button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 智能推荐 -->
+                <div class="section-card recommendations-section">
+                    <div class="section-header">
+                        <h3>🤖 智能推荐</h3>
+                        <p class="section-subtitle">基于您的兴趣和行为推荐</p>
+                    </div>
+                    <div class="recommendations-grid">
+                        {% for rec in smart_recommendations %}
+                        <div class="recommendation-card">
+                            <div class="rec-icon">{{ rec.icon }}</div>
+                            <div class="rec-content">
+                                <h4>{{ rec.title }}</h4>
+                                <p>{{ rec.description }}</p>
+                                <a href="{{ rec.link }}" class="rec-link">了解更多 ></a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部工具栏 -->
+    <div class="bottom-toolbar">
+        <button class="toolbar-btn" id="planRouteBtn">
+            <span class="btn-icon">🗺️</span>
+            <span class="btn-text">规划行程</span>
+        </button>
+        <button class="toolbar-btn" id="findVolunteerBtn">
+            <span class="btn-icon">🤝</span>
+            <span class="btn-text">找志愿者</span>
+        </button>
+        <button class="toolbar-btn" id="shareBtn">
+            <span class="btn-icon">📤</span>
+            <span class="btn-text">分享</span>
+        </button>
+        <button class="toolbar-btn" id="feedbackBtn">
+            <span class="btn-icon">💬</span>
+            <span class="btn-text">反馈</span>
+        </button>
+    </div>
+
+    <!-- 行程规划模态框 -->
+    <div id="routePlanModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>🗺️ 智能行程规划</h3>
+                <button class="close-btn" id="closeRoutePlan">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="plan-form">
+                    <div class="form-group">
+                        <label>出行时间：</label>
+                        <input type="date" id="travelDate" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label>游玩天数：</label>
+                        <select id="travelDays" class="form-input">
+                            <option value="1">1天</option>
+                            <option value="2">2天</option>
+                            <option value="3">3天</option>
+                            <option value="7">一周</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>兴趣偏好：</label>
+                        <div class="interest-tags">
+                            <label class="tag-label"><input type="checkbox" value="history"> 历史文化</label>
+                            <label class="tag-label"><input type="checkbox" value="food"> 美食体验</label>
+                            <label class="tag-label"><input type="checkbox" value="nature"> 自然风光</label>
+                            <label class="tag-label"><input type="checkbox" value="shopping"> 购物娱乐</label>
+                            <label class="tag-label"><input type="checkbox" value="accessibility"> 无障碍优先</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>出行方式：</label>
+                        <select id="transportMode" class="form-input">
+                            <option value="walking">步行为主</option>
+                            <option value="public">公共交通</option>
+                            <option value="taxi">打车/自驾</option>
+                            <option value="mixed">混合出行</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="generateRouteBtn">🚀 生成行程</button>
+                </div>
+                <div class="plan-result hidden" id="planResult">
+                    <!-- 生成的行程将在这里显示 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/city.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/google-map.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/city-bg.js') }}"></script>
+    <script>
+        // 城市数据
+        const cityData = {{ city_data | tojson }};
+        const attractions = {{ attractions | tojson }};
+        const routes = {{ recommended_routes | tojson }};
+        
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化分类筛选
+            initCategoryFilter();
+            
+            // 初始化行程规划
+            initRoutePlanning();
+            
+            // 加载城市数据
+            loadCityData('{{ city_name }}');
+            
+            // 如果Google Maps已经加载，立即初始化地图
+            if (typeof google !== 'undefined' && google.maps) {
+                initCityMap('{{ city_name }}', {{ city_data.coordinates | tojson }});
+            }
+        });
+        
+        // 重写Google Maps回调函数，确保地图正确初始化
+         window.initMap = function() {
+             console.log('Google Maps API加载完成');
+             // 初始化城市地图
+             initCityMap('{{ city_name }}', {{ city_data.coordinates | tojson }});
+         };
+    </script>
+    
+    <!-- Google Maps API - 在initMap函数定义后加载 -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dOWTgHz-TK7WgI&callback=initMap"></script>
+</body>
+</html>

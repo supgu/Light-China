@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户中心 - 点亮中国</title>
+    <meta name="description" content="点亮中国旅游平台用户中心，管理个人信息、收藏景点、打卡记录和评价">
+    <meta name="keywords" content="用户中心,个人信息,收藏景点,打卡记录,旅游评价,点亮中国">
+    
+    <!-- 样式文件 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/user.css') }}">
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header class="header">
+        <div class="header-content">
+            <a href="{{ url_for('main.index') }}" class="logo">🌟 点亮中国</a>
+            
+            <nav class="main-nav">
+                <a href="{{ url_for('main.index') }}">首页</a>
+                <a href="#" class="active">用户中心</a>
+                <a href="{{ url_for('volunteers.get_volunteer_services') }}">志愿服务</a>
+            </nav>
+            
+            <div class="user-menu">
+                <div class="user-info">
+                    <img src="{{ current_user.avatar or '/static/images/default-avatar.jpg' }}" alt="头像" class="user-avatar" width="40" height="40">
+                    <span class="username">{{ current_user.username }}</span>
+                </div>
+                <button class="btn btn-outline btn-sm" id="logoutBtn">退出登录</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="user-center">
+        <!-- 侧边栏导航 -->
+        <aside class="sidebar">
+            <div class="user-profile">
+                <div class="profile-avatar">
+                    <img src="{{ current_user.avatar or '/static/images/default-avatar.jpg' }}" alt="头像" id="avatarDisplay" width="100" height="100">
+                    <button class="avatar-edit-btn" id="editAvatarBtn">📷</button>
+                </div>
+                <h2 class="profile-name">{{ current_user.username }}</h2>
+                <p class="profile-bio">{{ current_user.bio or '这个人很懒，什么都没留下...' }}</p>
+                
+                <!-- 用户统计 -->
+                <div class="user-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ user_stats.checkins_count }}</div>
+                        <div class="stat-label">打卡次数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">{{ user_stats.cities_visited }}</div>
+                        <div class="stat-label">到访城市</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">{{ user_stats.reviews_count }}</div>
+                        <div class="stat-label">评价数量</div>
+                    </div>
+                </div>
+                
+                <!-- 成就徽章 -->
+                <div class="achievements">
+                    <h3>🏆 成就徽章</h3>
+                    <div class="badges-grid">
+                        {% for badge in user_badges %}
+                        <div class="badge-item {{ 'earned' if badge.earned else 'locked' }}" title="{{ badge.description }}">
+                            <span class="badge-icon">{{ badge.icon }}</span>
+                            <span class="badge-name">{{ badge.name }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 导航菜单 -->
+            <nav class="sidebar-nav">
+                <a href="#profile" class="nav-item active" data-tab="profile">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-text">个人信息</span>
+                </a>
+                <a href="#favorites" class="nav-item" data-tab="favorites">
+                    <span class="nav-icon">❤️</span>
+                    <span class="nav-text">我的收藏</span>
+                </a>
+                <a href="#routes" class="nav-item" data-tab="routes">
+                    <span class="nav-icon">🗺️</span>
+                    <span class="nav-text">行程计划</span>
+                </a>
+                <a href="#checkins" class="nav-item" data-tab="checkins">
+                    <span class="nav-icon">📸</span>
+                    <span class="nav-text">打卡记录</span>
+                </a>
+                <a href="#reviews" class="nav-item" data-tab="reviews">
+                    <span class="nav-icon">💬</span>
+                    <span class="nav-text">我的评价</span>
+                </a>
+                {% if current_user.is_volunteer %}
+                <a href="#volunteer" class="nav-item" data-tab="volunteer">
+                    <span class="nav-icon">🤝</span>
+                    <span class="nav-text">志愿服务</span>
+                </a>
+                {% endif %}
+                <a href="#settings" class="nav-item" data-tab="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">账户设置</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- 主要内容区域 -->
+        <div class="main-content">
+            <!-- 个人信息标签页 -->
+            <div id="profile" class="tab-content active">
+                <div class="content-header">
+                    <h2>👤 个人信息</h2>
+                    <button class="btn btn-primary" id="editProfileBtn">编辑资料</button>
+                </div>
+                
+                <div class="profile-form">
+                    <form id="profileForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>用户名</label>
+                                <input type="text" id="username" name="username" value="{{ current_user.username }}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>邮箱</label>
+                                <input type="email" id="email" name="email" value="{{ current_user.email }}" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>手机号</label>
+                                <input type="tel" id="phone" name="phone" value="{{ current_user.phone or '' }}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>性别</label>
+                                <select id="gender" name="gender" disabled>
+                                    <option value="">请选择</option>
+                                    <option value="male" {{ 'selected' if current_user.gender == 'male' else '' }}>男</option>
+                                    <option value="female" {{ 'selected' if current_user.gender == 'female' else '' }}>女</option>
+                                    <option value="other" {{ 'selected' if current_user.gender == 'other' else '' }}>其他</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>个人简介</label>
+                            <textarea id="bio" name="bio" rows="3" readonly>{{ current_user.bio or '' }}</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>兴趣标签</label>
+                            <div class="interests-tags">
+                                {% for interest in user_interests %}
+                                <span class="interest-tag">{{ interest }}</span>
+                                {% endfor %}
+                                <button type="button" class="add-interest-btn hidden" id="addInterestBtn">+ 添加标签</button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions hidden">
+                            <button type="submit" class="btn btn-primary">保存修改</button>
+                            <button type="button" class="btn btn-secondary" id="cancelEditBtn">取消</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 我的收藏标签页 -->
+            <div id="favorites" class="tab-content">
+                <div class="content-header">
+                    <h2>❤️ 我的收藏</h2>
+                    <div class="filter-tabs">
+                        <button class="filter-tab active" data-filter="all">全部</button>
+                        <button class="filter-tab" data-filter="cities">城市</button>
+                        <button class="filter-tab" data-filter="attractions">景点</button>
+                        <button class="filter-tab" data-filter="routes">路线</button>
+                    </div>
+                </div>
+                
+                <div class="favorites-grid">
+                    {% for favorite in user_favorites %}
+                    <div class="favorite-card" data-type="{{ favorite.type }}">
+                        <div class="card-image">
+                            <img src="{{ favorite.image or '/static/images/default-attraction.jpg' }}" alt="{{ favorite.name }}" width="200" height="150">
+                            <button class="unfavorite-btn" onclick="removeFavorite({{ favorite.id }}, '{{ favorite.type }}')">
+                                ❤️
+                            </button>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">{{ favorite.name }}</h3>
+                            <p class="card-description">{{ favorite.description[:60] }}...</p>
+                            <div class="card-meta">
+                                <span class="card-type">{{ favorite.type_name }}</span>
+                                {% if favorite.rating %}
+                                <span class="card-rating">⭐ {{ favorite.rating }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="card-actions">
+                                <button class="btn btn-sm btn-primary" onclick="viewDetail('{{ favorite.type }}', {{ favorite.id }})">查看详情</button>
+                                <button class="btn btn-sm btn-outline" onclick="addToRoute({{ favorite.id }})">加入行程</button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 行程计划标签页 -->
+            <div id="routes" class="tab-content">
+                <div class="content-header">
+                    <h2>🗺️ 行程计划</h2>
+                    <button class="btn btn-primary" id="createRouteBtn">+ 创建新行程</button>
+                </div>
+                
+                <div class="routes-list">
+                    {% for route in user_routes %}
+                    <div class="route-card">
+                        <div class="route-header">
+                            <div class="route-info">
+                                <h3 class="route-title">{{ route.title }}</h3>
+                                <p class="route-description">{{ route.description }}</p>
+                                <div class="route-meta">
+                                    <span class="route-duration">🕒 {{ route.duration }}天</span>
+                                    <span class="route-cities">📍 {{ route.cities_count }}个城市</span>
+                                    <span class="route-status status-{{ route.status }}">{{ route.status_name }}</span>
+                                </div>
+                            </div>
+                            <div class="route-actions">
+                                <button class="btn btn-sm btn-outline" onclick="editRoute({{ route.id }})">编辑</button>
+                                <button class="btn btn-sm btn-primary" onclick="viewRoute({{ route.id }})">查看</button>
+                            </div>
+                        </div>
+                        
+                        <div class="route-timeline">
+                            {% for day in route.days[:3] %}
+                            <div class="timeline-day">
+                                <div class="day-number">Day {{ loop.index }}</div>
+                                <div class="day-attractions">
+                                    {% for attraction in day.attractions[:2] %}
+                                    <span class="attraction-tag">{{ attraction.name }}</span>
+                                    {% endfor %}
+                                    {% if day.attractions|length > 2 %}
+                                    <span class="more-tag">+{{ day.attractions|length - 2 }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                            {% if route.days|length > 3 %}
+                            <div class="timeline-more">...</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 打卡记录标签页 -->
+            <div id="checkins" class="tab-content">
+                <div class="content-header">
+                    <h2>📸 打卡记录</h2>
+                    <div class="view-toggle">
+                        <button class="toggle-btn active" data-view="grid">🔲 网格</button>
+                        <button class="toggle-btn" data-view="map">🗺️ 地图</button>
+                    </div>
+                </div>
+                
+                <!-- 网格视图 -->
+                <div class="checkins-grid view-grid active">
+                    {% for checkin in user_checkins %}
+                    <div class="checkin-card">
+                        <div class="checkin-image">
+                            <img src="{{ checkin.image }}" alt="{{ checkin.attraction_name }}" width="200" height="150">
+                            <div class="checkin-date">{{ checkin.created_at.strftime('%m-%d') }}</div>
+                        </div>
+                        <div class="checkin-info">
+                            <h4 class="checkin-title">{{ checkin.attraction_name }}</h4>
+                            <p class="checkin-location">📍 {{ checkin.city_name }}</p>
+                            {% if checkin.message %}
+                            <p class="checkin-message">{{ checkin.message }}</p>
+                            {% endif %}
+                            <div class="checkin-actions">
+                                <button class="action-btn" onclick="shareCheckin({{ checkin.id }})">
+                                    📤 分享
+                                </button>
+                                <button class="action-btn" onclick="deleteCheckin({{ checkin.id }})">
+                                    🗑️ 删除
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- 地图视图 -->
+                <div class="checkins-map view-map">
+                    <div id="checkinsMapContainer" class="map-container"></div>
+                </div>
+            </div>
+
+            <!-- 我的评价标签页 -->
+            <div id="reviews" class="tab-content">
+                <div class="content-header">
+                    <h2>💬 我的评价</h2>
+                    <div class="reviews-stats">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ user_stats.reviews_count }}</span>
+                            <span class="stat-label">总评价数</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ user_stats.avg_rating }}</span>
+                            <span class="stat-label">平均评分</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ user_stats.helpful_votes }}</span>
+                            <span class="stat-label">获得点赞</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="reviews-list">
+                    {% for review in user_reviews %}
+                    <div class="review-card">
+                        <div class="review-header">
+                            <div class="attraction-info">
+                                <img src="{{ review.attraction.image }}" alt="{{ review.attraction.name }}" class="attraction-thumb" width="60" height="60">
+                                <div class="attraction-details">
+                                    <h4 class="attraction-name">{{ review.attraction.name }}</h4>
+                                    <p class="attraction-location">{{ review.attraction.city }}</p>
+                                </div>
+                            </div>
+                            <div class="review-meta">
+                                <div class="review-rating">
+                                    {% for i in range(5) %}
+                                    <span class="star {{ 'filled' if i < review.rating else '' }}">⭐</span>
+                                    {% endfor %}
+                                </div>
+                                <div class="review-date">{{ review.created_at.strftime('%Y-%m-%d') }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="review-content">
+                            <p>{{ review.content }}</p>
+                            {% if review.images %}
+                            <div class="review-images">
+                                {% for image in review.images %}
+                                <img src="{{ image }}" alt="评价图片" class="review-image" width="80" height="80">
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="review-stats">
+                            <span class="stat-item">👍 {{ review.likes_count }} 点赞</span>
+                            <span class="stat-item">💬 {{ review.replies_count }} 回复</span>
+                            <div class="review-actions">
+                                <button class="btn btn-sm btn-outline" onclick="editReview({{ review.id }})">编辑</button>
+                                <button class="btn btn-sm btn-outline" onclick="deleteReview({{ review.id }})">删除</button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 志愿服务标签页 -->
+            {% if current_user.is_volunteer %}
+            <div id="volunteer" class="tab-content">
+                <div class="content-header">
+                    <h2>🤝 志愿服务</h2>
+                    <div class="volunteer-stats">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ volunteer_stats.total_hours }}</span>
+                            <span class="stat-label">服务时长(小时)</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ volunteer_stats.served_users }}</span>
+                            <span class="stat-label">服务人数</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ volunteer_stats.rating }}</span>
+                            <span class="stat-label">服务评分</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="volunteer-content">
+                    <!-- 服务记录 -->
+                    <div class="service-records">
+                        <h3>📋 服务记录</h3>
+                        <div class="records-list">
+                            {% for record in volunteer_records %}
+                            <div class="record-card">
+                                <div class="record-header">
+                                    <div class="service-info">
+                                        <h4>{{ record.service_type }}</h4>
+                                        <p>服务对象：{{ record.client_name }}</p>
+                                        <p>服务时间：{{ record.service_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                                    </div>
+                                    <div class="service-status">
+                                        <span class="status-badge status-{{ record.status }}">{{ record.status_name }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="record-content">
+                                    <p>{{ record.description }}</p>
+                                    {% if record.feedback %}
+                                    <div class="client-feedback">
+                                        <h5>用户反馈：</h5>
+                                        <p>{{ record.feedback }}</p>
+                                        <div class="feedback-rating">
+                                            {% for i in range(5) %}
+                                            <span class="star {{ 'filled' if i < record.rating else '' }}">⭐</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- 可用时间设置 -->
+                    <div class="availability-settings">
+                        <h3>⏰ 可用时间设置</h3>
+                        <div class="availability-form">
+                            <form id="availabilityForm">
+                                <div class="time-slots">
+                                    {% for day in ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] %}
+                                    <div class="day-slot">
+                                        <label class="day-label">{{ day }}</label>
+                                        <div class="time-inputs">
+                                            <input type="time" name="{{ day }}_start" value="09:00">
+                                            <span>-</span>
+                                            <input type="time" name="{{ day }}_end" value="18:00">
+                                            <label class="checkbox-label">
+                                                <input type="checkbox" name="{{ day }}_available" checked>
+                                                可用
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <button type="submit" class="btn btn-primary">保存设置</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 账户设置标签页 -->
+            <div id="settings" class="tab-content">
+                <div class="content-header">
+                    <h2>⚙️ 账户设置</h2>
+                </div>
+                
+                <div class="settings-sections">
+                    <!-- 隐私设置 -->
+                    <div class="settings-section">
+                        <h3>🔒 隐私设置</h3>
+                        <div class="settings-form">
+                            <div class="setting-item">
+                                <label class="setting-label">
+                                    <input type="checkbox" id="profilePublic" {{ 'checked' if current_user.profile_public else '' }}>
+                                    公开个人资料
+                                </label>
+                                <p class="setting-description">其他用户可以查看您的基本信息和打卡记录</p>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label class="setting-label">
+                                    <input type="checkbox" id="showLocation" {{ 'checked' if current_user.show_location else '' }}>
+                                    显示位置信息
+                                </label>
+                                <p class="setting-description">在打卡和评价中显示您的位置信息</p>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label class="setting-label">
+                                    <input type="checkbox" id="allowMessages" {{ 'checked' if current_user.allow_messages else '' }}>
+                                    允许私信
+                                </label>
+                                <p class="setting-description">其他用户可以向您发送私信</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 通知设置 -->
+                    <div class="settings-section">
+                        <h3>🔔 通知设置</h3>
+                        <div class="settings-form">
+                            <div class="setting-item">
+                                <label class="setting-label">
+                                    <input type="checkbox" id="emailNotifications" {{ 'checked' if current_user.email_notifications else '' }}>
+                                    邮件通知
+                                </label>
+                                <p class="setting-description">接收重要更新和活动通知邮件</p>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label class="setting-label">
+                                    <input type="checkbox" id="pushNotifications" {{ 'checked' if current_user.push_notifications else '' }}>
+                                    推送通知
+                                </label>
+                                <p class="setting-description">接收浏览器推送通知</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 安全设置 -->
+                    <div class="settings-section">
+                        <h3>🛡️ 安全设置</h3>
+                        <div class="settings-form">
+                            <div class="setting-item">
+                                <label class="setting-label">修改密码</label>
+                                <button class="btn btn-outline" id="changePasswordBtn">更改密码</button>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label class="setting-label">两步验证</label>
+                                <button class="btn btn-outline" id="setup2FABtn">设置两步验证</button>
+                            </div>
+                            
+                            <div class="setting-item">
+                                <label class="setting-label">登录设备管理</label>
+                                <button class="btn btn-outline" id="manageDevicesBtn">管理设备</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 数据管理 -->
+                    <div class="settings-section">
+                        <h3>📊 数据管理</h3>
+                        <div class="settings-form">
+                            <div class="setting-item">
+                                <label class="setting-label">导出数据</label>
+                                <button class="btn btn-outline" id="exportDataBtn">导出我的数据</button>
+                                <p class="setting-description">下载您的所有数据副本</p>
+                            </div>
+                            
+                            <div class="setting-item danger-zone">
+                                <label class="setting-label">删除账户</label>
+                                <button class="btn btn-danger" id="deleteAccountBtn">删除账户</button>
+                                <p class="setting-description">永久删除您的账户和所有数据，此操作不可恢复</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 创建行程模态框 -->
+    <div id="createRouteModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>🗺️ 创建新行程</h3>
+                <button class="close-btn" id="closeCreateRouteModal">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="createRouteForm">
+                    <div class="form-group">
+                        <label>行程标题</label>
+                        <input type="text" name="title" placeholder="给您的行程起个名字" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>开始日期</label>
+                            <input type="date" name="start_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label>结束日期</label>
+                            <input type="date" name="end_date" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>行程描述</label>
+                        <textarea name="description" rows="3" placeholder="描述一下这次旅行的主题和目标"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>目的地城市</label>
+                        <div class="cities-selector">
+                            <input type="text" id="citySearch" placeholder="搜索并添加城市">
+                            <div class="selected-cities" id="selectedCities"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">创建行程</button>
+                        <button type="button" class="btn btn-secondary" id="cancelCreateRoute">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/user.js') }}"></script>
+    <script>
+        // 用户数据
+        const userData = {{ current_user | tojson }};
+        const userStats = {{ user_stats | tojson }};
+        
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化标签页切换
+            initTabSwitching();
+            
+            // 初始化个人资料编辑
+            initProfileEditing();
+            
+            // 初始化收藏管理
+            initFavoritesManagement();
+            
+            // 初始化行程管理
+            initRouteManagement();
+            
+            // 初始化打卡记录
+            initCheckinsDisplay();
+            
+            // 初始化设置
+            initSettings();
+            
+            // 加载用户状态
+            loadUserData();
+        });
+    </script>
+</body>
+</html>

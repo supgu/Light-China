@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>志愿服务 - 点亮中国</title>
+    <meta name="description" content="点亮中国志愿服务平台，提供无障碍旅游志愿服务，连接志愿者与游客">
+    <meta name="keywords" content="志愿服务,无障碍旅游,志愿者,旅游帮助,点亮中国">
+    
+    <!-- 样式文件 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/volunteer.css') }}">
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header class="header">
+        <div class="header-content">
+            <a href="{{ url_for('main.index') }}" class="logo">🌟 点亮中国</a>
+            
+            <nav class="main-nav">
+                <a href="{{ url_for('main.index') }}">首页</a>
+                <a href="#" class="active">志愿服务</a>
+                <a href="{{ url_for('main.user_center') }}">用户中心</a>
+            </nav>
+            
+            <div class="user-menu">
+                {% if current_user.is_authenticated %}
+                <div class="user-info">
+                    <img src="{{ current_user.avatar or '/static/images/default-avatar.jpg' }}" alt="头像" class="user-avatar" width="40" height="40">
+                    <span class="username">{{ current_user.username }}</span>
+                </div>
+                {% else %}
+                <button class="btn btn-primary" id="loginBtn">登录</button>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- 英雄区域 -->
+    <section class="hero-section volunteer-hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1>🤝 志愿服务</h1>
+                <p class="hero-subtitle">为特殊群体提供贴心的旅游陪伴服务</p>
+                <p class="hero-description">我们致力于让每个人都能享受美好的旅行体验，无论年龄、身体状况如何</p>
+                
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">{{ service_stats.total_volunteers }}</div>
+                        <div class="stat-label">注册志愿者</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">{{ service_stats.completed_services }}</div>
+                        <div class="stat-label">完成服务</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">{{ service_stats.avg_rating }}</div>
+                        <div class="stat-label">平均评分</div>
+                    </div>
+                </div>
+                
+                <div class="hero-actions">
+                    {% if not current_user.is_authenticated %}
+                    <button class="btn btn-primary btn-lg" id="requestServiceBtn">🙋‍♀️ 申请服务</button>
+                    <button class="btn btn-outline btn-lg" id="becomeVolunteerBtn">🤝 成为志愿者</button>
+                    {% elif current_user.is_volunteer %}
+                    <button class="btn btn-primary btn-lg" onclick="window.location.href='{{ url_for('main.user_center') }}#volunteer'">📋 我的服务</button>
+                    <button class="btn btn-outline btn-lg" id="updateAvailabilityBtn">⏰ 更新可用时间</button>
+                    {% else %}
+                    <button class="btn btn-primary btn-lg" id="requestServiceBtn">🙋‍♀️ 申请服务</button>
+                    <button class="btn btn-outline btn-lg" id="becomeVolunteerBtn">🤝 成为志愿者</button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="hero-image">
+                <img src="{{ url_for('static', filename='images/volunteer-hero.jpg') }}" alt="志愿服务" width="600" height="400">
+            </div>
+        </div>
+    </section>
+
+    <!-- 服务分类 -->
+    <section class="services-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>🎯 服务分类</h2>
+                <p>根据您的需求选择合适的志愿服务</p>
+            </div>
+            
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon">🧑‍🦽</div>
+                    <h3 class="service-title">无障碍陪同</h3>
+                    <p class="service-description">为行动不便的朋友提供景点陪同、无障碍路线指导等服务</p>
+                    <ul class="service-features">
+                        <li>✅ 无障碍路线规划</li>
+                        <li>✅ 轮椅推行协助</li>
+                        <li>✅ 景点讲解服务</li>
+                        <li>✅ 安全陪护</li>
+                    </ul>
+                    <button class="btn btn-primary" onclick="requestService('accessibility')">申请服务</button>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon">👴</div>
+                    <h3 class="service-title">老年人陪伴</h3>
+                    <p class="service-description">为老年朋友提供贴心的旅游陪伴和生活照料服务</p>
+                    <ul class="service-features">
+                        <li>✅ 景点陪同游览</li>
+                        <li>✅ 拍照留念服务</li>
+                        <li>✅ 用餐协助</li>
+                        <li>✅ 紧急情况处理</li>
+                    </ul>
+                    <button class="btn btn-primary" onclick="requestService('elderly')">申请服务</button>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon">👁️</div>
+                    <h3 class="service-title">视障陪同</h3>
+                    <p class="service-description">为视力障碍朋友提供专业的导览和安全陪护服务</p>
+                    <ul class="service-features">
+                        <li>✅ 语音景点介绍</li>
+                        <li>✅ 安全路线引导</li>
+                        <li>✅ 触觉体验协助</li>
+                        <li>✅ 交通出行帮助</li>
+                    </ul>
+                    <button class="btn btn-primary" onclick="requestService('visual')">申请服务</button>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon">👂</div>
+                    <h3 class="service-title">听障陪同</h3>
+                    <p class="service-description">为听力障碍朋友提供手语翻译和沟通协助服务</p>
+                    <ul class="service-features">
+                        <li>✅ 手语翻译服务</li>
+                        <li>✅ 文字沟通协助</li>
+                        <li>✅ 景点信息传达</li>
+                        <li>✅ 应急情况处理</li>
+                    </ul>
+                    <button class="btn btn-primary" onclick="requestService('hearing')">申请服务</button>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon">👨‍👩‍👧‍👦</div>
+                    <h3 class="service-title">家庭出行</h3>
+                    <p class="service-description">为有特殊需求的家庭提供全方位的旅游协助服务</p>
+                    <ul class="service-features">
+                        <li>✅ 多人协同服务</li>
+                        <li>✅ 儿童照看协助</li>
+                        <li>✅ 行程规划建议</li>
+                        <li>✅ 应急预案制定</li>
+                    </ul>
+                    <button class="btn btn-primary" onclick="requestService('family')">申请服务</button>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon">🏥</div>
+                    <h3 class="service-title">医疗陪护</h3>
+                    <p class="service-description">为需要医疗关注的朋友提供专业的健康监护服务</p>
+                    <ul class="service-features">
+                        <li>✅ 健康状况监测</li>
+                        <li>✅ 药物提醒服务</li>
+                        <li>✅ 医疗急救协助</li>
+                        <li>✅ 医院联络服务</li>
+                    </ul>
+                    <button class="btn btn-primary" onclick="requestService('medical')">申请服务</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 志愿者展示 -->
+    <section class="volunteers-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>🌟 优秀志愿者</h2>
+                <p>经过专业培训和认证的志愿者团队</p>
+                
+                <div class="volunteers-filter">
+                    <button class="filter-btn active" data-filter="all">全部</button>
+                    <button class="filter-btn" data-filter="accessibility">无障碍</button>
+                    <button class="filter-btn" data-filter="elderly">老年陪伴</button>
+                    <button class="filter-btn" data-filter="visual">视障陪同</button>
+                    <button class="filter-btn" data-filter="hearing">听障陪同</button>
+                    <button class="filter-btn" data-filter="medical">医疗陪护</button>
+                </div>
+            </div>
+            
+            <div class="volunteers-grid">
+                {% for volunteer in featured_volunteers %}
+                <div class="volunteer-card" data-services="{{ volunteer.services | join(',') }}">
+                    <div class="volunteer-avatar">
+                        <img src="{{ volunteer.avatar or '/static/images/default-avatar.jpg' }}" alt="{{ volunteer.name }}" width="80" height="80">
+                        <div class="volunteer-status {{ 'online' if volunteer.is_available else 'offline' }}"></div>
+                    </div>
+                    
+                    <div class="volunteer-info">
+                        <h3 class="volunteer-name">{{ volunteer.name }}</h3>
+                        <p class="volunteer-title">{{ volunteer.title }}</p>
+                        
+                        <div class="volunteer-rating">
+                            <div class="stars">
+                                {% for i in range(5) %}
+                                <span class="star {{ 'filled' if i < volunteer.rating else '' }}">⭐</span>
+                                {% endfor %}
+                            </div>
+                            <span class="rating-text">{{ volunteer.rating }} ({{ volunteer.reviews_count }}条评价)</span>
+                        </div>
+                        
+                        <div class="volunteer-stats">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ volunteer.service_hours }}</span>
+                                <span class="stat-label">服务时长</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ volunteer.served_users }}</span>
+                                <span class="stat-label">服务人数</span>
+                            </div>
+                        </div>
+                        
+                        <div class="volunteer-services">
+                            {% for service in volunteer.services %}
+                            <span class="service-tag">{{ service }}</span>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="volunteer-description">
+                            <p>{{ volunteer.description }}</p>
+                        </div>
+                        
+                        <div class="volunteer-actions">
+                            <button class="btn btn-primary" onclick="contactVolunteer({{ volunteer.id }})">💬 联系</button>
+                            <button class="btn btn-outline" onclick="viewVolunteerProfile({{ volunteer.id }})">👤 详情</button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- 服务流程 -->
+    <section class="process-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>📋 服务流程</h2>
+                <p>简单四步，获得专业的志愿服务</p>
+            </div>
+            
+            <div class="process-steps">
+                <div class="step-item">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>提交申请</h3>
+                        <p>填写服务需求表单，详细描述您的具体需求和时间安排</p>
+                    </div>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>匹配志愿者</h3>
+                        <p>系统根据您的需求自动匹配合适的志愿者，或您可以主动选择</p>
+                    </div>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>确认服务</h3>
+                        <p>与志愿者沟通确认服务细节，包括时间、地点、具体需求等</p>
+                    </div>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>享受服务</h3>
+                        <p>按约定时间享受专业的志愿服务，服务结束后可进行评价反馈</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 用户评价 -->
+    <section class="testimonials-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>💬 用户评价</h2>
+                <p>来自真实用户的服务体验分享</p>
+            </div>
+            
+            <div class="testimonials-grid">
+                {% for testimonial in user_testimonials %}
+                <div class="testimonial-card">
+                    <div class="testimonial-header">
+                        <div class="user-info">
+                            <img src="{{ testimonial.user.avatar or '/static/images/default-avatar.jpg' }}" alt="{{ testimonial.user.name }}" class="user-avatar" width="50" height="50">
+                            <div class="user-details">
+                                <h4 class="user-name">{{ testimonial.user.name }}</h4>
+                                <p class="service-type">{{ testimonial.service_type }}</p>
+                            </div>
+                        </div>
+                        <div class="testimonial-rating">
+                            {% for i in range(5) %}
+                            <span class="star {{ 'filled' if i < testimonial.rating else '' }}">⭐</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="testimonial-content">
+                        <p>"{{ testimonial.content }}"</p>
+                    </div>
+                    
+                    <div class="testimonial-footer">
+                        <span class="testimonial-date">{{ testimonial.created_at.strftime('%Y年%m月') }}</span>
+                        <span class="volunteer-name">志愿者：{{ testimonial.volunteer.name }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- 申请服务模态框 -->
+    <div id="serviceRequestModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>🙋‍♀️ 申请志愿服务</h3>
+                <button class="close-btn" id="closeServiceRequestModal">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="serviceRequestForm">
+                    <div class="form-step active" data-step="1">
+                        <h4>基本信息</h4>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>姓名 *</label>
+                                <input type="text" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>联系电话 *</label>
+                                <input type="tel" name="phone" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>服务类型 *</label>
+                            <select name="service_type" required>
+                                <option value="">请选择服务类型</option>
+                                <option value="accessibility">无障碍陪同</option>
+                                <option value="elderly">老年人陪伴</option>
+                                <option value="visual">视障陪同</option>
+                                <option value="hearing">听障陪同</option>
+                                <option value="family">家庭出行</option>
+                                <option value="medical">医疗陪护</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>特殊需求说明</label>
+                            <textarea name="special_needs" rows="3" placeholder="请详细描述您的特殊需求和注意事项"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-step" data-step="2">
+                        <h4>服务安排</h4>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>服务日期 *</label>
+                                <input type="date" name="service_date" required>
+                            </div>
+                            <div class="form-group">
+                                <label>服务时间 *</label>
+                                <select name="service_time" required>
+                                    <option value="">请选择时间段</option>
+                                    <option value="morning">上午 (9:00-12:00)</option>
+                                    <option value="afternoon">下午 (13:00-17:00)</option>
+                                    <option value="evening">晚上 (18:00-21:00)</option>
+                                    <option value="fullday">全天 (9:00-17:00)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>服务地点 *</label>
+                            <input type="text" name="service_location" placeholder="请输入具体的服务地点" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>预计服务时长</label>
+                            <select name="duration">
+                                <option value="2">2小时</option>
+                                <option value="4">4小时</option>
+                                <option value="6">6小时</option>
+                                <option value="8">8小时</option>
+                                <option value="custom">其他（请在备注中说明）</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>服务人数</label>
+                            <select name="people_count">
+                                <option value="1">1人</option>
+                                <option value="2">2人</option>
+                                <option value="3">3人</option>
+                                <option value="4">4人</option>
+                                <option value="more">5人以上</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-step" data-step="3">
+                        <h4>志愿者偏好</h4>
+                        
+                        <div class="form-group">
+                            <label>性别偏好</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="gender_preference" value="any" checked>
+                                    无要求
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="gender_preference" value="male">
+                                    男性志愿者
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="gender_preference" value="female">
+                                    女性志愿者
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>年龄偏好</label>
+                            <select name="age_preference">
+                                <option value="any">无要求</option>
+                                <option value="young">年轻志愿者 (18-30岁)</option>
+                                <option value="middle">中年志愿者 (30-50岁)</option>
+                                <option value="senior">资深志愿者 (50岁以上)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>语言要求</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="languages" value="mandarin" checked>
+                                    普通话
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="languages" value="local_dialect">
+                                    本地方言
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="languages" value="english">
+                                    英语
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="languages" value="sign_language">
+                                    手语
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>其他要求</label>
+                            <textarea name="other_requirements" rows="3" placeholder="请描述对志愿者的其他要求或期望"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-navigation">
+                        <button type="button" class="btn btn-secondary hidden" id="prevStepBtn">上一步</button>
+                        <button type="button" class="btn btn-primary" id="nextStepBtn">下一步</button>
+                        <button type="submit" class="btn btn-primary hidden" id="submitRequestBtn">提交申请</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成为志愿者模态框 -->
+    <div id="volunteerApplicationModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>🤝 成为志愿者</h3>
+                <button class="close-btn" id="closeVolunteerApplicationModal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="application-intro">
+                    <h4>加入我们的志愿者团队</h4>
+                    <p>成为志愿者，用您的爱心和专业技能帮助更多需要帮助的朋友享受美好的旅行体验。</p>
+                    
+                    <div class="volunteer-benefits">
+                        <div class="benefit-item">
+                            <span class="benefit-icon">🏆</span>
+                            <span class="benefit-text">获得志愿服务证书</span>
+                        </div>
+                        <div class="benefit-item">
+                            <span class="benefit-icon">🎓</span>
+                            <span class="benefit-text">免费专业培训</span>
+                        </div>
+                        <div class="benefit-item">
+                            <span class="benefit-icon">🤝</span>
+                            <span class="benefit-text">结识志同道合的朋友</span>
+                        </div>
+                        <div class="benefit-item">
+                            <span class="benefit-icon">💝</span>
+                            <span class="benefit-text">获得服务时长认证</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <form id="volunteerApplicationForm">
+                    <div class="form-section">
+                        <h4>基本信息</h4>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>真实姓名 *</label>
+                                <input type="text" name="real_name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>联系电话 *</label>
+                                <input type="tel" name="phone" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>年龄 *</label>
+                                <input type="number" name="age" min="18" max="80" required>
+                            </div>
+                            <div class="form-group">
+                                <label>性别 *</label>
+                                <select name="gender" required>
+                                    <option value="">请选择</option>
+                                    <option value="male">男</option>
+                                    <option value="female">女</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>居住城市 *</label>
+                            <input type="text" name="city" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h4>服务能力</h4>
+                        
+                        <div class="form-group">
+                            <label>可提供的服务类型 *</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="service_types" value="accessibility">
+                                    无障碍陪同
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="service_types" value="elderly">
+                                    老年人陪伴
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="service_types" value="visual">
+                                    视障陪同
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="service_types" value="hearing">
+                                    听障陪同
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="service_types" value="family">
+                                    家庭出行
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="service_types" value="medical">
+                                    医疗陪护
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>语言能力</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="languages" value="mandarin" checked>
+                                    普通话
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="languages" value="english">
+                                    英语
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="languages" value="sign_language">
+                                    手语
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="languages" value="local_dialect">
+                                    本地方言
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>相关经验或技能</label>
+                            <textarea name="experience" rows="3" placeholder="请描述您的相关工作经验、志愿服务经历或专业技能"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h4>可用时间</h4>
+                        
+                        <div class="availability-grid">
+                            {% for day in ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] %}
+                            <div class="day-availability">
+                                <label class="day-label">{{ day }}</label>
+                                <div class="time-slots">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="availability_{{ loop.index0 }}" value="morning">
+                                        上午
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="availability_{{ loop.index0 }}" value="afternoon">
+                                        下午
+                                    </label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="availability_{{ loop.index0 }}" value="evening">
+                                        晚上
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h4>个人介绍</h4>
+                        
+                        <div class="form-group">
+                            <label>自我介绍 *</label>
+                            <textarea name="introduction" rows="4" placeholder="请简单介绍一下自己，包括性格特点、兴趣爱好、为什么想成为志愿者等" required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="agree_terms" required>
+                                我已阅读并同意《志愿者服务协议》和《隐私政策》
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">提交申请</button>
+                        <button type="button" class="btn btn-secondary" id="cancelVolunteerApplication">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/volunteer.js') }}"></script>
+    <script>
+        // 页面数据
+        const serviceStats = {{ service_stats | tojson }};
+        const featuredVolunteers = {{ featured_volunteers | tojson }};
+        
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化服务申请
+            initServiceRequest();
+            
+            // 初始化志愿者申请
+            initVolunteerApplication();
+            
+            // 初始化志愿者筛选
+            initVolunteerFilter();
+            
+            // 初始化联系功能
+            initContactSystem();
+        });
+    </script>
+</body>
+</html>

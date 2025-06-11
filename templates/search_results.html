@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搜索结果 - 点亮中国</title>
+    <meta name="description" content="点亮中国旅游平台搜索结果页面，搜索全国景点、美食、路线等旅游信息">
+    <meta name="keywords" content="旅游搜索,景点搜索,美食搜索,路线搜索,点亮中国">
+    
+    <!-- 样式文件 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/search.css') }}">
+</head>
+<body>
+    <!-- 头部导航 -->
+    <header class="header">
+        <div class="header-content">
+            <a href="{{ url_for('main.index') }}" class="logo">🌟 点亮中国</a>
+            
+            <!-- 搜索栏 -->
+            <div class="search-container">
+                <form class="search-form" action="{{ url_for('main.search') }}" method="get">
+                    <div class="search-input-group">
+                        <input type="text" name="q" value="{{ query }}" placeholder="搜索城市、景点、美食..." class="search-input">
+                        <button type="submit" class="search-btn">🔍</button>
+                    </div>
+                </form>
+            </div>
+            
+            <nav class="main-nav">
+                <a href="{{ url_for('main.index') }}">首页</a>
+                <a href="{{ url_for('volunteers.volunteer_service') }}">志愿服务</a>
+                <a href="{{ url_for('main.user_center') }}">用户中心</a>
+            </nav>
+            
+            <div class="user-menu">
+                {% if current_user.is_authenticated %}
+                <div class="user-info">
+                    <img src="{{ current_user.avatar or '/static/images/default-avatar.jpg' }}" alt="头像" class="user-avatar" width="40" height="40">
+                    <span class="username">{{ current_user.username }}</span>
+                </div>
+                {% else %}
+                <button class="btn btn-primary" id="loginBtn">登录</button>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- 搜索结果页面 -->
+    <main class="search-results-page">
+        <div class="container">
+            <!-- 搜索信息栏 -->
+            <div class="search-info">
+                <div class="search-summary">
+                    <h1>搜索结果</h1>
+                    <p class="search-query">关键词：<strong>"{{ query }}"</strong></p>
+                    <p class="results-count">找到 <strong>{{ total_results }}</strong> 个相关结果</p>
+                </div>
+                
+                <div class="search-suggestions">
+                    {% if suggestions %}
+                    <div class="suggestions">
+                        <span class="suggestions-label">相关搜索：</span>
+                        {% for suggestion in suggestions %}
+                        <a href="{{ url_for('main.search', q=suggestion) }}" class="suggestion-tag">{{ suggestion }}</a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="search-content">
+                <!-- 筛选侧边栏 -->
+                <aside class="filters-sidebar">
+                    <div class="filters-header">
+                        <h3>筛选条件</h3>
+                        <button class="clear-filters" id="clearFilters">清除全部</button>
+                    </div>
+                    
+                    <!-- 内容类型筛选 -->
+                    <div class="filter-group">
+                        <h4 class="filter-title">内容类型</h4>
+                        <div class="filter-options">
+                            <label class="filter-option">
+                                <input type="checkbox" name="type" value="all" {{ 'checked' if not filters.type or 'all' in filters.type else '' }}>
+                                <span class="checkmark"></span>
+                                全部 ({{ total_results }})
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" name="type" value="city" {{ 'checked' if 'city' in filters.type else '' }}>
+                                <span class="checkmark"></span>
+                                城市 ({{ results_count.cities }})
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" name="type" value="attraction" {{ 'checked' if 'attraction' in filters.type else '' }}>
+                                <span class="checkmark"></span>
+                                景点 ({{ results_count.attractions }})
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" name="type" value="food" {{ 'checked' if 'food' in filters.type else '' }}>
+                                <span class="checkmark"></span>
+                                美食 ({{ results_count.foods }})
+                            </label>
+                            <label class="filter-option">
+                                <input type="checkbox" name="type" value="route" {{ 'checked' if 'route' in filters.type else '' }}>
+                                <span class="checkmark"></span>
+                                路线 ({{ results_count.routes }})
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 地区筛选 -->
+                    <div class="filter-group">
+                        <h4 class="filter-title">地区</h4>
+                        <div class="filter-options">
+                            {% for region in popular_regions %}
+                            <label class="filter-option">
+                                <input type="checkbox" name="region" value="{{ region.code }}" {{ 'checked' if region.code in filters.region else '' }}>
+                                <span class="checkmark"></span>
+                                {{ region.name }} ({{ region.count }})
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- 评分筛选 -->
+                    <div class="filter-group">
+                        <h4 class="filter-title">评分</h4>
+                        <div class="filter-options">
+                            <label class="filter-option">
+                                <input type="radio" name="rating" value="all" {{ 'checked' if not filters.rating or filters.rating == 'all' else '' }}>
+                                <span class="radiomark"></span>
+                                全部评分
+                            </label>
+                            <label class="filter-option">
+                                <input type="radio" name="rating" value="4.5" {{ 'checked' if filters.rating == '4.5' else '' }}>
+                                <span class="radiomark"></span>
+                                4.5分以上 ⭐⭐⭐⭐⭐
+                            </label>
+                            <label class="filter-option">
+                                <input type="radio" name="rating" value="4.0" {{ 'checked' if filters.rating == '4.0' else '' }}>
+                                <span class="radiomark"></span>
+                                4.0分以上 ⭐⭐⭐⭐
+                            </label>
+                            <label class="filter-option">
+                                <input type="radio" name="rating" value="3.5" {{ 'checked' if filters.rating == '3.5' else '' }}>
+                                <span class="radiomark"></span>
+                                3.5分以上 ⭐⭐⭐
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 价格筛选 -->
+                    <div class="filter-group">
+                        <h4 class="filter-title">价格范围</h4>
+                        <div class="filter-options">
+                            <label class="filter-option">
+                                <input type="radio" name="price" value="all" {{ 'checked' if not filters.price or filters.price == 'all' else '' }}>
+                                <span class="radiomark"></span>
+                                不限
+                            </label>
+                            <label class="filter-option">
+                                <input type="radio" name="price" value="free" {{ 'checked' if filters.price == 'free' else '' }}>
+                                <span class="radiomark"></span>
+                                免费
+                            </label>
+                            <label class="filter-option">
+                                <input type="radio" name="price" value="low" {{ 'checked' if filters.price == 'low' else '' }}>
+                                <span class="radiomark"></span>
+                                ¥50以下
+                            </label>
+                            <label class="filter-option">
+                                <input type="radio" name="price" value="medium" {{ 'checked' if filters.price == 'medium' else '' }}>
+                                <span class="radiomark"></span>
+                                ¥50-200
+                            </label>
+                            <label class="filter-option">
+                                <input type="radio" name="price" value="high" {{ 'checked' if filters.price == 'high' else '' }}>
+                                <span class="radiomark"></span>
+                                ¥200以上
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 特色标签 -->
+                    <div class="filter-group">
+                        <h4 class="filter-title">特色标签</h4>
+                        <div class="filter-options">
+                            {% for tag in popular_tags %}
+                            <label class="filter-option">
+                                <input type="checkbox" name="tags" value="{{ tag.name }}" {{ 'checked' if tag.name in filters.tags else '' }}>
+                                <span class="checkmark"></span>
+                                {{ tag.name }} ({{ tag.count }})
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- 搜索结果主体 -->
+                <div class="results-main">
+                    <!-- 排序和视图控制 -->
+                    <div class="results-controls">
+                        <div class="sort-options">
+                            <label>排序方式：</label>
+                            <select name="sort" id="sortSelect">
+                                <option value="relevance" {{ 'selected' if sort == 'relevance' else '' }}>相关度</option>
+                                <option value="rating" {{ 'selected' if sort == 'rating' else '' }}>评分</option>
+                                <option value="popularity" {{ 'selected' if sort == 'popularity' else '' }}>热度</option>
+                                <option value="distance" {{ 'selected' if sort == 'distance' else '' }}>距离</option>
+                                <option value="price_low" {{ 'selected' if sort == 'price_low' else '' }}>价格从低到高</option>
+                                <option value="price_high" {{ 'selected' if sort == 'price_high' else '' }}>价格从高到低</option>
+                                <option value="newest" {{ 'selected' if sort == 'newest' else '' }}>最新</option>
+                            </select>
+                        </div>
+                        
+                        <div class="view-options">
+                            <button class="view-btn {{ 'active' if view_mode == 'list' else '' }}" data-view="list">📋</button>
+                            <button class="view-btn {{ 'active' if view_mode == 'grid' else '' }}" data-view="grid">⊞</button>
+                            <button class="view-btn {{ 'active' if view_mode == 'map' else '' }}" data-view="map">🗺️</button>
+                        </div>
+                    </div>
+
+                    <!-- 搜索结果列表 -->
+                    <div class="results-container" id="resultsContainer">
+                        {% if results %}
+                        <div class="results-list {{ view_mode }}">
+                            {% for result in results %}
+                            <div class="result-item {{ result.type }}" data-type="{{ result.type }}" data-id="{{ result.id }}">
+                                <div class="result-image">
+                                    <img src="{{ result.image or '/static/images/default-' + result.type + '.jpg' }}" alt="{{ result.title }}" width="300" height="200">
+                                    <div class="result-type-badge">{{ result.type_label }}</div>
+                                    {% if result.is_featured %}
+                                    <div class="featured-badge">推荐</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="result-content">
+                                    <div class="result-header">
+                                        <h3 class="result-title">
+                                            <a href="{{ result.url }}">{{ result.title | highlight(query) | safe }}</a>
+                                        </h3>
+                                        
+                                        <div class="result-rating">
+                                            {% if result.rating %}
+                                            <div class="stars">
+                                                {% for i in range(5) %}
+                                                <span class="star {{ 'filled' if i < result.rating else '' }}">⭐</span>
+                                                {% endfor %}
+                                            </div>
+                                            <span class="rating-text">{{ result.rating }} ({{ result.reviews_count }}条评价)</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="result-info">
+                                        <div class="result-location">
+                                            📍 {{ result.location }}
+                                        </div>
+                                        
+                                        {% if result.price %}
+                                        <div class="result-price">
+                                            {% if result.price == 0 %}
+                                            <span class="price-free">免费</span>
+                                            {% else %}
+                                            <span class="price-value">¥{{ result.price }}</span>
+                                            {% if result.original_price and result.original_price > result.price %}
+                                            <span class="price-original">¥{{ result.original_price }}</span>
+                                            {% endif %}
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if result.distance %}
+                                        <div class="result-distance">
+                                            🚗 {{ result.distance }}km
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="result-description">
+                                        <p>{{ result.description | highlight(query) | safe | truncate(150) }}</p>
+                                    </div>
+                                    
+                                    <div class="result-tags">
+                                        {% for tag in result.tags %}
+                                        <span class="tag">{{ tag }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <div class="result-actions">
+                                        <a href="{{ result.url }}" class="btn btn-primary">查看详情</a>
+                                        <button class="btn btn-outline" onclick="addToFavorites({{ result.id }}, '{{ result.type }}')">❤️ 收藏</button>
+                                        {% if result.type == 'attraction' %}
+                                        <button class="btn btn-outline" onclick="planRoute({{ result.id }})">🗺️ 路线</button>
+                                        {% endif %}
+                                        <button class="btn btn-outline" onclick="shareResult({{ result.id }})">📤 分享</button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- 分页 -->
+                        {% if pagination.pages > 1 %}
+                        <div class="pagination">
+                            {% if pagination.has_prev %}
+                            <a href="{{ url_for('main.search', q=query, page=pagination.prev_num, **request.args) }}" class="page-btn prev">上一页</a>
+                            {% endif %}
+                            
+                            {% for page_num in pagination.iter_pages() %}
+                            {% if page_num %}
+                            {% if page_num != pagination.page %}
+                            <a href="{{ url_for('main.search', q=query, page=page_num, **request.args) }}" class="page-btn">{{ page_num }}</a>
+                            {% else %}
+                            <span class="page-btn active">{{ page_num }}</span>
+                            {% endif %}
+                            {% else %}
+                            <span class="page-btn ellipsis">…</span>
+                            {% endif %}
+                            {% endfor %}
+                            
+                            {% if pagination.has_next %}
+                            <a href="{{ url_for('main.search', q=query, page=pagination.next_num, **request.args) }}" class="page-btn next">下一页</a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
+                        {% else %}
+                        <!-- 无搜索结果 -->
+                        <div class="no-results">
+                            <div class="no-results-icon">🔍</div>
+                            <h3>没有找到相关结果</h3>
+                            <p>抱歉，没有找到与 "{{ query }}" 相关的内容</p>
+                            
+                            <div class="search-suggestions">
+                                <h4>搜索建议：</h4>
+                                <ul>
+                                    <li>检查输入的关键词是否正确</li>
+                                    <li>尝试使用更通用的关键词</li>
+                                    <li>减少筛选条件</li>
+                                    <li>尝试搜索相关的城市或景点名称</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="popular-searches">
+                                <h4>热门搜索：</h4>
+                                <div class="popular-tags">
+                                    {% for popular in popular_searches %}
+                                    <a href="{{ url_for('main.search', q=popular) }}" class="popular-tag">{{ popular }}</a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="no-results-actions">
+                                <a href="{{ url_for('main.index') }}" class="btn btn-primary">返回首页</a>
+                                <button class="btn btn-outline" onclick="clearSearch()">重新搜索</button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- 地图视图 -->
+                    <div class="map-view hidden" id="mapView">
+                    <div id="searchMap" class="search-map"></div>
+                        <div class="map-controls">
+                            <button class="btn btn-outline" id="centerMapBtn">📍 居中显示</button>
+                            <button class="btn btn-outline" id="clusterToggleBtn">🔗 聚合显示</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>关于我们</h4>
+                    <p>点亮中国致力于为每个人提供美好的旅行体验</p>
+                </div>
+                <div class="footer-section">
+                    <h4>联系我们</h4>
+                    <p>邮箱：contact@lightchina.com</p>
+                    <p>电话：400-123-4567</p>
+                </div>
+                <div class="footer-section">
+                    <h4>友情链接</h4>
+                    <a href="#">旅游局官网</a>
+                    <a href="#">无障碍旅游协会</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2024 点亮中国. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://webapi.amap.com/maps?v=2.0&key=YOUR_AMAP_KEY"></script>
+    <script src="{{ url_for('static', filename='js/search.js') }}"></script>
+    <script>
+        // 页面数据
+        const searchData = {
+            query: {{ query | tojson }},
+            results: {{ results | tojson }},
+            filters: {{ filters | tojson }},
+            totalResults: {{ total_results }},
+            currentPage: {{ pagination.page if pagination else 1 }}
+        };
+        
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化搜索功能
+            initSearchResults();
+            
+            // 初始化筛选器
+            initFilters();
+            
+            // 初始化排序
+            initSorting();
+            
+            // 初始化视图切换
+            initViewToggle();
+            
+            // 初始化地图
+            if (searchData.results.length > 0) {
+                initSearchMap();
+            }
+            
+            // 初始化交互功能
+            initInteractions();
+        });
+    </script>
+</body>
+</html>
