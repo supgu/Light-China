@@ -266,7 +266,7 @@ def create_sample_data():
             'rating': 5,
             'title': '震撼的历史体验',
             'content': '故宫真的太壮观了！建筑精美，历史厚重，值得花一整天时间慢慢游览。',
-            'images': json.dumps(['https://example.com/review1.jpg'], ensure_ascii=False),
+            'images': json.dumps([], ensure_ascii=False),
             'visit_date': date(2024, 1, 15),
             'helpful_count': 23
         },

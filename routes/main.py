@@ -45,63 +45,35 @@ def get_china_map_data():
 
 @main_bp.route('/api/map/city-data/<city_name>')
 def get_city_data(city_name):
-    """获取指定城市的详细数据"""
+    """获取指定城市的景点数据"""
     try:
-        # 根据城市名称查询景点数据
-        attractions = Attraction.query.filter(
-            Attraction.location.like(f'%{city_name}%')
-        ).all()
+        # 查询指定城市的景点
+        attractions = Attraction.query.filter_by(city=city_name).all()
         
-        # 查询路线数据
-        routes = Route.query.filter(
-            Route.description.like(f'%{city_name}%')
-        ).all()
-        
-        # 查询志愿服务数据
-        volunteer_services = VolunteerService.query.filter(
-            VolunteerService.location.like(f'%{city_name}%')
-        ).all()
-        
-        # 构建城市数据
-        city_data = {
-            'city': city_name,
-            'stats': {
-                'attractions': len(attractions),
-                'routes': len(routes),
-                'volunteers': len(volunteer_services),
-                'visits': sum([getattr(attr, 'rating', 0) * 100 for attr in attractions])  # 模拟访问量
-            },
-            'attractions': []
-        }
-        
-        # 处理景点数据
-        for attraction in attractions[:10]:  # 限制返回前10个
-            attraction_data = {
+        city_data = []
+        for attraction in attractions:
+            city_data.append({
                 'id': attraction.id,
                 'name': attraction.name,
-                'type': 'red_history' if '红色' in attraction.description or '革命' in attraction.description or '纪念' in attraction.description else 'scenic',
-                'description': attraction.description[:100] + '...' if len(attraction.description) > 100 else attraction.description,
-                'location': attraction.location,
-                'rating': attraction.rating,
-                'is_barrier_free': attraction.is_barrier_free,
-                'contact_phone': attraction.contact_phone
-            }
-            
-            # 根据景点名称和描述判断类型
-            if any(keyword in attraction.name for keyword in ['美食', '小吃', '餐厅', '食堂']):
-                attraction_data['type'] = 'food'
-            elif any(keyword in attraction.name for keyword in ['网红', '打卡', 'ins']):
-                attraction_data['type'] = 'internet_famous'
-            elif any(keyword in attraction.description for keyword in ['红色', '革命', '纪念', '党史', '抗战']):
-                attraction_data['type'] = 'red_history'
-            
-            city_data['attractions'].append(attraction_data)
+                'lat': float(attraction.latitude) if attraction.latitude else 0,
+                'lon': float(attraction.longitude) if attraction.longitude else 0,
+                'rating': float(attraction.rating) if attraction.rating else 0,
+                'review_count': attraction.review_count or 0,
+                'category': attraction.category or '景点',
+                'description': attraction.description or '',
+                'image_url': attraction.image_url or '',
+                'address': attraction.address or '',
+                'opening_hours': attraction.opening_hours or '',
+                'ticket_price': attraction.ticket_price or '',
+                'phone': attraction.phone or '',
+                'website': attraction.website or ''
+            })
         
         return jsonify({
             'success': True,
-            'data': city_data
+            'data': city_data,
+            'count': len(city_data)
         })
-        
     except Exception as e:
         return jsonify({
             'success': False,
@@ -110,53 +82,36 @@ def get_city_data(city_name):
 
 @main_bp.route('/api/map/ranking')
 def get_city_ranking():
-    """获取城市热度排行榜"""
+    """获取城市排行榜数据"""
     try:
-        # 统计各城市的景点数量和评分
+        # 按城市统计景点数量和平均评分
         city_stats = db.session.query(
-            func.substring_index(Attraction.location, '市', 1).label('city'),
+            Attraction.city,
             func.count(Attraction.id).label('attraction_count'),
-            func.avg(Attraction.rating).label('avg_rating')
+            func.avg(Attraction.rating).label('avg_rating'),
+            func.sum(Attraction.review_count).label('total_reviews')
+        ).filter(
+            Attraction.city.isnot(None)
         ).group_by(
-            func.substring_index(Attraction.location, '市', 1)
+            Attraction.city
         ).order_by(
             func.count(Attraction.id).desc()
-        ).limit(10).all()
+        ).limit(20).all()
         
         ranking_data = []
-        for i, (city, count, rating) in enumerate(city_stats, 1):
-            # 清理城市名称
-            clean_city = city.replace('省', '').replace('市', '').replace('自治区', '')
-            if clean_city:
-                ranking_data.append({
-                    'rank': i,
-                    'city': clean_city,
-                    'attraction_count': count,
-                    'avg_rating': round(float(rating or 0), 1),
-                    'heat_score': count * (rating or 0) * 10  # 热度分数
-                })
-        
-        # 如果数据库中数据不足，添加一些模拟数据
-        if len(ranking_data) < 5:
-            mock_data = [
-                {'rank': 1, 'city': '上海', 'attraction_count': 25, 'avg_rating': 4.5, 'heat_score': 1125},
-                {'rank': 2, 'city': '北京', 'attraction_count': 22, 'avg_rating': 4.3, 'heat_score': 946},
-                {'rank': 3, 'city': '杭州', 'attraction_count': 18, 'avg_rating': 4.4, 'heat_score': 792},
-                {'rank': 4, 'city': '广州', 'attraction_count': 16, 'avg_rating': 4.2, 'heat_score': 672},
-                {'rank': 5, 'city': '成都', 'attraction_count': 15, 'avg_rating': 4.3, 'heat_score': 645},
-                {'rank': 6, 'city': '西安', 'attraction_count': 14, 'avg_rating': 4.1, 'heat_score': 574},
-                {'rank': 7, 'city': '南京', 'attraction_count': 12, 'avg_rating': 4.2, 'heat_score': 504},
-                {'rank': 8, 'city': '深圳', 'attraction_count': 11, 'avg_rating': 4.0, 'heat_score': 440},
-                {'rank': 9, 'city': '苏州', 'attraction_count': 10, 'avg_rating': 4.3, 'heat_score': 430},
-                {'rank': 10, 'city': '青岛', 'attraction_count': 9, 'avg_rating': 4.1, 'heat_score': 369}
-            ]
-            ranking_data = mock_data[:10]
+        for i, (city, count, avg_rating, total_reviews) in enumerate(city_stats, 1):
+            ranking_data.append({
+                'rank': i,
+                'city': city,
+                'attraction_count': count,
+                'avg_rating': round(float(avg_rating) if avg_rating else 0, 1),
+                'total_reviews': int(total_reviews) if total_reviews else 0
+            })
         
         return jsonify({
             'success': True,
             'data': ranking_data
         })
-        
     except Exception as e:
         return jsonify({
             'success': False,
@@ -165,55 +120,141 @@ def get_city_ranking():
 
 @main_bp.route('/api/search')
 def search():
-    """搜索城市和景点"""
+    """搜索景点"""
     try:
         query = request.args.get('q', '').strip()
-        if not query:
-            return jsonify({
-                'success': False,
-                'message': '搜索关键词不能为空'
-            }), 400
+        city = request.args.get('city', '').strip()
+        category = request.args.get('category', '').strip()
+        min_rating = request.args.get('min_rating', type=float)
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
         
-        # 搜索景点
-        attractions = Attraction.query.filter(
-            db.or_(
-                Attraction.name.like(f'%{query}%'),
-                Attraction.location.like(f'%{query}%'),
-                Attraction.description.like(f'%{query}%')
+        # 构建查询
+        search_query = Attraction.query
+        
+        if query:
+            search_query = search_query.filter(
+                Attraction.name.contains(query) |
+                Attraction.description.contains(query) |
+                Attraction.address.contains(query)
             )
-        ).limit(10).all()
         
-        # 搜索路线
-        routes = Route.query.filter(
-            db.or_(
-                Route.name.like(f'%{query}%'),
-                Route.description.like(f'%{query}%')
-            )
-        ).limit(5).all()
+        if city:
+            search_query = search_query.filter(Attraction.city == city)
         
-        search_results = {
-            'attractions': [{
-                'id': attr.id,
-                'name': attr.name,
-                'location': attr.location,
-                'rating': attr.rating,
-                'type': 'attraction'
-            } for attr in attractions],
-            'routes': [{
-                'id': route.id,
-                'name': route.name,
-                'description': route.description[:100] + '...' if len(route.description) > 100 else route.description,
-                'type': 'route'
-            } for route in routes]
-        }
+        if category:
+            search_query = search_query.filter(Attraction.category == category)
+        
+        if min_rating:
+            search_query = search_query.filter(Attraction.rating >= min_rating)
+        
+        # 分页
+        pagination = search_query.paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        attractions = []
+        for attraction in pagination.items:
+            attractions.append({
+                'id': attraction.id,
+                'name': attraction.name,
+                'city': attraction.city,
+                'category': attraction.category,
+                'rating': float(attraction.rating) if attraction.rating else 0,
+                'review_count': attraction.review_count or 0,
+                'image_url': attraction.image_url,
+                'description': attraction.description,
+                'address': attraction.address,
+                'latitude': float(attraction.latitude) if attraction.latitude else None,
+                'longitude': float(attraction.longitude) if attraction.longitude else None
+            })
         
         return jsonify({
             'success': True,
-            'data': search_results
+            'data': attractions,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': pagination.total,
+                'pages': pagination.pages,
+                'has_next': pagination.has_next,
+                'has_prev': pagination.has_prev
+            }
         })
-        
     except Exception as e:
         return jsonify({
             'success': False,
             'message': str(e)
         }), 500
+
+@main_bp.route('/reviews')
+def reviews_page():
+    """评价页面路由"""
+    try:
+        from models import Review, Attraction, User
+        from sqlalchemy import func, desc
+        
+        # 获取筛选参数
+        page = request.args.get('page', 1, type=int)
+        sort_by = request.args.get('sort_by', 'created_at')
+        city_filter = request.args.get('city', '')
+        rating_filter = request.args.get('rating', type=int)
+        per_page = 20
+        
+        # 构建查询
+        query = Review.query.join(Attraction).join(User)
+        
+        # 城市筛选
+        if city_filter:
+            query = query.filter(Attraction.city == city_filter)
+            
+        # 评分筛选
+        if rating_filter:
+            query = query.filter(Review.rating == rating_filter)
+            
+        # 排序
+        if sort_by == 'rating':
+            query = query.order_by(desc(Review.rating))
+        elif sort_by == 'helpful_count':
+            query = query.order_by(desc(Review.helpful_count))
+        else:
+            query = query.order_by(desc(Review.created_at))
+            
+        # 分页
+        pagination = query.paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        reviews = pagination.items
+        
+        # 获取统计数据
+        total_reviews = Review.query.count()
+        average_rating = db.session.query(func.avg(Review.rating)).scalar() or 0
+        active_reviewers = db.session.query(func.count(func.distinct(Review.user_id))).scalar() or 0
+        
+        # 今日新增评价
+        from datetime import date
+        today_reviews = Review.query.filter(
+            func.date(Review.created_at) == date.today()
+        ).count()
+        
+        # 获取所有城市列表
+        cities = db.session.query(Attraction.city).distinct().all()
+        cities = [city[0] for city in cities if city[0]]
+        
+        return render_template('reviews.html',
+            reviews=reviews,
+            total_reviews=total_reviews,
+            average_rating=round(average_rating, 1),
+            active_reviewers=active_reviewers,
+            today_reviews=today_reviews,
+            cities=cities,
+            has_more=pagination.has_next
+        )
+        
+    except Exception as e:
+        print(f"评价页面错误: {str(e)}")
+        return render_template('error.html', 
+            error_message="加载评价页面失败",
+            error_details=str(e)
+        ), 500

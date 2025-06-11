@@ -71,6 +71,7 @@ class Attraction(db.Model):
     category = db.Column(db.String(50), nullable=False, comment='景点类别：红色历史/网红打卡/美食探索')
     description = db.Column(db.Text, comment='景点描述')
     address = db.Column(db.String(255), comment='详细地址')
+    city = db.Column(db.String(50), comment='所在城市')
     latitude = db.Column(db.Float, comment='纬度')
     longitude = db.Column(db.Float, comment='经度')
     opening_hours = db.Column(db.String(100), comment='开放时间')
@@ -96,6 +97,7 @@ class Attraction(db.Model):
             'category': self.category,
             'description': self.description,
             'address': self.address,
+            'city': self.city,
             'latitude': self.latitude,
             'longitude': self.longitude,
             'opening_hours': self.opening_hours,

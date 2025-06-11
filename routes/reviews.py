@@ -75,6 +75,77 @@ def save_uploaded_image(file):
     # 返回相对路径
     return f"/static/uploads/reviews/{filename}"
 
+@reviews_bp.route('/all', methods=['GET'])
+def get_all_reviews():
+    """获取所有评价（支持筛选和分页）"""
+    try:
+        # 获取查询参数
+        page = request.args.get('page', 1, type=int)
+        per_page = min(request.args.get('per_page', 10, type=int), 50)  # 限制每页最多50条
+        sort_by = request.args.get('sort_by', 'created_at')
+        city = request.args.get('city', '')
+        rating = request.args.get('rating', type=int)
+        
+        # 构建查询
+        query = db.session.query(Review).join(Attraction).join(User)
+        
+        # 城市筛选
+        if city:
+            query = query.filter(Attraction.city == city)
+        
+        # 评分筛选
+        if rating:
+            query = query.filter(Review.rating == rating)
+        
+        # 排序
+        if sort_by == 'rating':
+            query = query.order_by(Review.rating.desc())
+        elif sort_by == 'helpful_count':
+            query = query.order_by(Review.helpful_count.desc())
+        else:  # created_at
+            query = query.order_by(Review.created_at.desc())
+        
+        # 分页
+        pagination = query.paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        reviews = []
+        for review in pagination.items:
+            review_data = {
+                'id': review.id,
+                'rating': review.rating,
+                'content': review.content,
+                'created_at': review.created_at.isoformat(),
+                'helpful_count': review.helpful_count or 0,
+                'likes_count': review.helpful_count or 0,  # 兼容前端
+                'images': json.loads(review.images) if review.images else [],
+                'attraction': {
+                    'id': review.attraction.id,
+                    'name': review.attraction.name,
+                    'city': review.attraction.city,
+                    'image': review.attraction.image
+                },
+                'user': {
+                    'id': review.user.id,
+                    'username': review.user.username,
+                    'avatar': review.user.avatar
+                }
+            }
+            reviews.append(review_data)
+        
+        return jsonify({
+            'success': True,
+            'reviews': reviews,
+            'has_more': pagination.has_next,
+            'total': pagination.total,
+            'page': page,
+            'per_page': per_page
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @reviews_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_review():
